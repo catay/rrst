@@ -7,7 +7,12 @@ import (
 )
 
 type ConfigData struct {
-	Repos []repositories `yaml:"repositories"`
+	Globals globals        `yaml:"globals"`
+	Repos   []repositories `yaml:"repositories"`
+}
+
+type globals struct {
+	CacheDir string `yaml:"cache_dir"`
 }
 
 type repositories struct {
