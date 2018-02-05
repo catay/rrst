@@ -7,23 +7,12 @@ import (
 )
 
 type ConfigData struct {
-	Globals globals        `yaml:"globals"`
-	Repos   []repositories `yaml:"repositories"`
+	Globals globals      `yaml:"globals"`
+	Repos   []repository `yaml:"repositories"`
 }
 
 type globals struct {
 	CacheDir string `yaml:"cache_dir"`
-}
-
-type repositories struct {
-	Name         string `yaml:"name"`
-	RType        string `yaml:"type"`
-	Vendor       string `yaml:"vendor"`
-	RegCode      string `yaml:"reg_code"`
-	RemoteURI    string `yaml:"remote_uri"`
-	LocalURI     string `yaml:"local_uri"`
-	UpdatePolicy string `yaml:"update_policy"`
-	UpdateSuffix string `yaml:"update_suffix"`
 }
 
 func NewConfig(configFile string) (c *ConfigData, err error) {
