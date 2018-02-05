@@ -16,23 +16,30 @@ type globals struct {
 }
 
 type repositories struct {
-	Name      string `yaml:"name"`
-	RType     string `yaml:"type"`
-	Vendor    string `yaml:"Vendor"`
-	RegCode   string `yaml:"reg_code"`
-	RemoteURI string `yaml:"remote_uri"`
-	LocalURI  string `yaml:"local_uri"`
+	Name         string `yaml:"name"`
+	RType        string `yaml:"type"`
+	Vendor       string `yaml:"vendor"`
+	RegCode      string `yaml:"reg_code"`
+	RemoteURI    string `yaml:"remote_uri"`
+	LocalURI     string `yaml:"local_uri"`
+	UpdatePolicy string `yaml:"update_policy"`
+	UpdateSuffix string `yaml:"update_suffix"`
 }
 
-func New(configFile string) (c *ConfigData, err error) {
-	c = new(ConfigData)
+func NewConfig(configFile string) (c *ConfigData, err error) {
+	c = &ConfigData{}
 
 	data, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := yaml.Unmarshal(data, c); err != nil {
+	// file can't be empty
+	if len(data) == 0 {
+		return nil, fmt.Errorf("%s is empty", configFile)
+	}
+
+	if err := yaml.UnmarshalStrict(data, c); err != nil {
 		return nil, err
 	}
 
