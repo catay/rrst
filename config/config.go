@@ -7,6 +7,7 @@ import (
 )
 
 type ConfigData struct {
+	Version int          `yaml:"version"`
 	Globals globals      `yaml:"globals"`
 	Repos   []Repository `yaml:"repositories"`
 }
