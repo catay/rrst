@@ -14,6 +14,7 @@ type Repository struct {
 	LocalURI     string `yaml:"local_uri"`
 	UpdatePolicy string `yaml:"update_policy"`
 	UpdateSuffix string `yaml:"update_suffix"`
+	CacheDir     string `yaml:"cache_dir"`
 }
 
 func NewRepository(name string) (r *Repository) {

@@ -32,6 +32,12 @@ var _ = Describe("Config", func() {
 				Expect(len(config.Repos)).To(Equal(2))
 			})
 
+			It("has the cache dir of repositories set", func() {
+				for _, r := range config.Repos {
+					Expect(r.CacheDir).To(Equal(config.Globals.CacheDir))
+				}
+			})
+
 			It("should not error", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})

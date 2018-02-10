@@ -16,7 +16,9 @@ type globals struct {
 }
 
 func NewConfig(configFile string) (c *ConfigData, err error) {
-	c = &ConfigData{}
+	c = &ConfigData{
+		Globals: globals{CacheDir: "/var/cache/rrst"},
+	}
 
 	data, err := ioutil.ReadFile(configFile)
 	if err != nil {
@@ -32,11 +34,22 @@ func NewConfig(configFile string) (c *ConfigData, err error) {
 		return nil, err
 	}
 
+	c.SetReposDefaults()
+
 	return c, err
+}
+
+func (self *ConfigData) SetReposDefaults() {
+	for i, r := range self.Repos {
+		if r.CacheDir == "" {
+			//r.CacheDir = self.Globals.CacheDir
+			self.Repos[i].CacheDir = self.Globals.CacheDir
+		}
+	}
 }
 
 func (self *ConfigData) Print() {
 	for _, r := range self.Repos {
-		fmt.Println("*", r.Name)
+		fmt.Println("*", r.Name, r.CacheDir)
 	}
 }
