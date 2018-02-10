@@ -8,7 +8,7 @@ import (
 
 type ConfigData struct {
 	Globals globals      `yaml:"globals"`
-	Repos   []repository `yaml:"repositories"`
+	Repos   []Repository `yaml:"repositories"`
 }
 
 type globals struct {
