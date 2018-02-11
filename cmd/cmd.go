@@ -35,7 +35,7 @@ func New() *cli {
 func (self *cli) Run() (err error) {
 	args := kingpin.MustParse(self.app.Parse(os.Args[1:]))
 
-	fmt.Println("Config:", *self.configFile)
+	fmt.Println("config:", *self.configFile)
 
 	r, err := app.New(*self.configFile)
 	if err != nil {
@@ -44,11 +44,11 @@ func (self *cli) Run() (err error) {
 
 	switch args {
 	case "sync":
-		fmt.Println("repo")
+		fmt.Println("command: sync")
 		r.Sync()
 	case "show":
-		fmt.Println("show")
-		r.Print()
+		fmt.Println("command: show")
+		r.Show()
 	}
 
 	return

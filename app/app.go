@@ -26,7 +26,7 @@ func New(configFile string) (a *App, err error) {
 	return
 }
 
-func (self *App) Print() {
+func (self *App) Show() {
 
 	fmt.Println("cache_dir:", self.config.Globals.CacheDir)
 
@@ -37,7 +37,10 @@ func (self *App) Print() {
 }
 
 func (self *App) Sync() (err error) {
-	fmt.Println("Not implemented yet!")
+	for _, r := range self.config.Repos {
+		fmt.Println("*", r.Name)
+		r.Sync()
+	}
 	return
 }
 

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strings"
 )
@@ -34,4 +35,20 @@ func (self *Repository) GetRegCode() (string, bool) {
 	}
 
 	return self.RegCode, true
+}
+
+func (self *Repository) Sync() error {
+
+	if self.Vendor == "SUSE" {
+		fmt.Println("  - Fetch SUSE products json if older then x hours")
+		fmt.Println("  - Get secret hash for give URL repo")
+	}
+
+	fmt.Println("  - Fetch repomd xml file")
+	fmt.Println("  - Read repomd xml file and get package file location")
+	fmt.Println("  - Fetch packages xml file and check hash")
+	fmt.Println("  - Read packages xml file and get packages list and check hash")
+	fmt.Println("  - Download packages to local path if not existing yet and check hash")
+
+	return nil
 }
