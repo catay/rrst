@@ -39,9 +39,11 @@ func (self *App) Show() {
 func (self *App) Sync() (err error) {
 	for _, r := range self.config.Repos {
 		fmt.Println("*", r.Name)
-		r.Sync()
+		if err := r.Sync(); err != nil {
+			return err
+		}
 	}
-	return
+	return nil
 }
 
 func (self *App) setCacheDir() {

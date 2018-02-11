@@ -45,7 +45,10 @@ func (self *cli) Run() (err error) {
 	switch args {
 	case "sync":
 		fmt.Println("command: sync")
-		r.Sync()
+		if err := r.Sync(); err != nil {
+			return err
+		}
+
 	case "show":
 		fmt.Println("command: show")
 		r.Show()

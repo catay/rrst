@@ -1,7 +1,9 @@
 package config
 
 import (
+	"errors"
 	"fmt"
+	"github.com/catay/rrst/api/suse"
 	"os"
 	"strings"
 )
@@ -41,6 +43,17 @@ func (self *Repository) Sync() error {
 
 	if self.Vendor == "SUSE" {
 		fmt.Println("  - Fetch SUSE products json if older then x hours")
+
+		regCode, ok := self.GetRegCode()
+		if !ok {
+			return errors.New(fmt.Sprintf("Environment variable %v not set", self.RegCode))
+		}
+
+		scc := suse.NewSCCApi(regCode, self.CacheDir)
+		if err := scc.FetchProductsJson(); err != nil {
+			return err
+		}
+
 		fmt.Println("  - Get secret hash for give URL repo")
 	}
 
