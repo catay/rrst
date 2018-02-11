@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/catay/rrst/rrst"
+	"github.com/catay/rrst/app"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"os"
 )
@@ -37,7 +37,7 @@ func (self *cli) Run() (err error) {
 
 	fmt.Println("Config:", *self.configFile)
 
-	r, err := rrst.New(*self.configFile)
+	r, err := app.New(*self.configFile)
 	if err != nil {
 		return err
 	}
