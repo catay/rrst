@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 )
 
 type repomd struct {
@@ -29,8 +30,12 @@ func (self *repomd) Debug() {
 }
 
 func (self *repomd) Metadata() error {
+	return self.fetchRepomdFile("/repodata/repomd.xml")
+}
 
-	resp, err := http.Get(self.Url + "/repodata/repomd.xml" + "?" + self.Secret)
+func (self *repomd) fetchRepomdFile(fileLocation string) error {
+
+	resp, err := http.Get(self.Url + fileLocation + "?" + self.Secret)
 	if err != nil {
 		return err
 	}
@@ -52,11 +57,12 @@ func (self *repomd) Metadata() error {
 		}
 	}
 
-	if err := ioutil.WriteFile(self.CacheDir+"/repomd.xml", content, 0600); err != nil {
+	if err := ioutil.WriteFile(self.CacheDir+"/"+path.Base(fileLocation), content, 0600); err != nil {
 		return err
 	}
 
 	return nil
+
 }
 
 //func (self *repomd) Packages() []string {
