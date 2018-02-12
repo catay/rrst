@@ -118,8 +118,6 @@ func (self *SCCApi) getProducts() []Product {
 		log.Fatal(err)
 	}
 
-	fmt.Println("debug:", self.cacheFile)
-
 	if err := json.Unmarshal(data, &p); err != nil {
 		log.Fatal(err)
 	}
