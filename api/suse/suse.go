@@ -41,7 +41,6 @@ func NewSCCApi(regCode string, cacheDir string) (self *SCCApi) {
 	api.cacheDir = cacheDir
 	api.cacheFile = api.cacheDir + "/" + util.Sha256Sum(api.regCode)
 	api.cacheRefreshDuration = 86400
-	// api.FetchProductsJson()
 	return api
 }
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/catay/rrst/api/suse"
+	"github.com/catay/rrst/repomd"
 	"os"
 	"strings"
 )
@@ -41,6 +42,8 @@ func (self *Repository) GetRegCode() (string, bool) {
 
 func (self *Repository) Sync() error {
 
+	var secret string
+
 	if self.Vendor == "SUSE" {
 		fmt.Println("  - Fetch SUSE products json if older then x hours")
 
@@ -55,9 +58,20 @@ func (self *Repository) Sync() error {
 		}
 
 		fmt.Println("  - Get secret hash for give URL repo")
+
+		secret, ok = scc.GetSecretURI(self.RemoteURI)
+		if !ok {
+			return errors.New(fmt.Sprintf("Secret for url  %v not found", self.RemoteURI))
+		}
 	}
 
 	fmt.Println("  - Fetch repomd xml file")
+	rm := repomd.NewRepoMd(self.RemoteURI, secret, self.CacheDir+"/"+self.Name)
+
+	if err := rm.Metadata(); err != nil {
+		return err
+	}
+
 	fmt.Println("  - Read repomd xml file and get package file location")
 	fmt.Println("  - Fetch packages xml file and check hash")
 	fmt.Println("  - Read packages xml file and get packages list and check hash")
