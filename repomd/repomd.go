@@ -29,6 +29,7 @@ func (self *repomd) Debug() {
 }
 
 func (self *repomd) Metadata() error {
+
 	resp, err := http.Get(self.Url + "/repodata/repomd.xml" + "?" + self.Secret)
 	if err != nil {
 		return err
@@ -44,8 +45,11 @@ func (self *repomd) Metadata() error {
 		return err
 	}
 
-	if err := os.Mkdir(self.CacheDir, 0700); err != nil {
-		return err
+	// check if dir exists, if not create it
+	if _, err := os.Stat(self.CacheDir); os.IsNotExist(err) {
+		if err := os.Mkdir(self.CacheDir, 0700); err != nil {
+			return err
+		}
 	}
 
 	if err := ioutil.WriteFile(self.CacheDir+"/repomd.xml", content, 0600); err != nil {
