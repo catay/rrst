@@ -1,6 +1,7 @@
 package repomd
 
 import (
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -14,6 +15,18 @@ type repomd struct {
 	Secret   string
 	CacheDir string
 	//  metadata string = "repomd.xml"
+	Revision string       `xml:"revision"`
+	Data     []repomdData `xml:"data"`
+}
+
+type repomdData struct {
+	Type     string             `xml:"type,attr"`
+	Size     string             `xml:"size"`
+	Location repomdDataLocation `xml:"location"`
+}
+
+type repomdDataLocation struct {
+	HRef string `xml:"href,attr"`
 }
 
 func NewRepoMd(url, secret string, cacheDir string) *repomd {
@@ -30,7 +43,40 @@ func (self *repomd) Debug() {
 }
 
 func (self *repomd) Metadata() error {
-	return self.fetchRepomdFile("/repodata/repomd.xml")
+
+	if err := self.fetchRepomdFile("/repodata/repomd.xml"); err != nil {
+		return err
+	}
+
+	if err := self.unMarshalRepomdData(); err != nil {
+		return err
+	}
+
+	for _, d := range self.Data {
+		//fmt.Printf("type: %v\n", d.Type)
+		//fmt.Printf("size: %v\n", d.Size)
+		fmt.Printf("DEBUG - location: %v\n", d.Location.HRef)
+		if err := self.fetchRepomdFile("/" + d.Location.HRef); err != nil {
+			return err
+		}
+	}
+
+	return nil
+
+}
+
+func (self *repomd) unMarshalRepomdData() error {
+
+	data, err := ioutil.ReadFile(self.CacheDir + "/repomd.xml")
+	if err != nil {
+		return err
+	}
+
+	if err := xml.Unmarshal(data, self); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (self *repomd) fetchRepomdFile(fileLocation string) error {
