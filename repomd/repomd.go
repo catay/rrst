@@ -44,22 +44,30 @@ func (self *repomd) Debug() {
 
 func (self *repomd) Metadata() error {
 
-	if err := self.fetchRepomdFile("/repodata/repomd.xml"); err != nil {
+	ok, err := self.refreshRepomd()
+
+	if err != nil {
 		return err
 	}
 
-	if err := self.unMarshalRepomdData(); err != nil {
-		return err
-	}
-
-	for _, d := range self.Data {
-		//fmt.Printf("type: %v\n", d.Type)
-		//fmt.Printf("size: %v\n", d.Size)
-		fmt.Printf("DEBUG - location: %v\n", d.Location.HRef)
-		if err := self.fetchRepomdFile("/" + d.Location.HRef); err != nil {
-			return err
+	if ok {
+		for _, d := range self.Data {
+			fmt.Printf("DEBUG - location: %v\n", d.Location.HRef)
+			if err := self.fetchRepomdFile("/" + d.Location.HRef); err != nil {
+				return err
+			}
 		}
+
 	}
+
+	//	if err := self.fetchRepomdFile("/repodata/repomd.xml"); err != nil {
+	//		return err
+	//	}
+
+	//	if err := self.unMarshalRepomdData(); err != nil {
+	//		return err
+	//	}
+	//
 
 	return nil
 
@@ -77,6 +85,75 @@ func (self *repomd) unMarshalRepomdData() error {
 	}
 
 	return nil
+}
+
+func (self *repomd) refreshRepomd() (bool, error) {
+
+	repomdFile := self.CacheDir + "/repomd.xml"
+	ok := false
+
+	resp, err := http.Get(self.Url + "/repodata/repomd.xml" + "?" + self.Secret)
+	if err != nil {
+		return ok, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return ok, errors.New(fmt.Sprintf("HTTP error %v ", resp.StatusCode))
+	}
+
+	content, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return ok, err
+	}
+
+	t := *self
+
+	if err := xml.Unmarshal(content, &t); err != nil {
+		return ok, err
+	}
+
+	f, err := ioutil.ReadFile(repomdFile)
+
+	if err == nil {
+		if err := xml.Unmarshal(f, self); err != nil {
+			return ok, err
+		}
+	} else {
+		if !os.IsNotExist(err) {
+			return ok, err
+		}
+	}
+
+	if t.Revision != self.Revision {
+		ok = true
+		fmt.Println("DEBUG: repomd REVISION OUTDATED !!!")
+		*self = t
+
+		// check if dir exists, if not create it
+		if _, err := os.Stat(self.CacheDir); os.IsNotExist(err) {
+			if err := os.Mkdir(self.CacheDir, 0700); err != nil {
+				return ok, err
+			}
+		}
+
+		if err := ioutil.WriteFile(repomdFile, content, 0600); err != nil {
+			return ok, err
+		}
+	}
+
+	return ok, nil
+
+	// 0.  fetch remote repodata.xml in memory
+	// 1. check if local repodata.xml exists
+	// if exists
+	//    unmarchal it in property value
+	//    unmarchal in temp variable
+	//    compare old revision with new revision
+	//    if newer revision, store to disk and fetch other data files
+	// if not exists
+	//    store to disk and fetch other data files
+
 }
 
 func (self *repomd) fetchRepomdFile(fileLocation string) error {
