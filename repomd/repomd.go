@@ -60,15 +60,6 @@ func (self *repomd) Metadata() error {
 
 	}
 
-	//	if err := self.fetchRepomdFile("/repodata/repomd.xml"); err != nil {
-	//		return err
-	//	}
-
-	//	if err := self.unMarshalRepomdData(); err != nil {
-	//		return err
-	//	}
-	//
-
 	return nil
 
 }
@@ -86,6 +77,16 @@ func (self *repomd) unMarshalRepomdData() error {
 
 	return nil
 }
+
+// 0.  fetch remote repodata.xml in memory
+// 1. check if local repodata.xml exists
+// if exists
+//    unmarchal it in property value
+//    unmarchal in temp variable
+//    compare old revision with new revision
+//    if newer revision, store to disk and fetch other data files
+// if not exists
+//    store to disk and fetch other data files
 
 func (self *repomd) refreshRepomd() (bool, error) {
 
@@ -143,17 +144,6 @@ func (self *repomd) refreshRepomd() (bool, error) {
 	}
 
 	return ok, nil
-
-	// 0.  fetch remote repodata.xml in memory
-	// 1. check if local repodata.xml exists
-	// if exists
-	//    unmarchal it in property value
-	//    unmarchal in temp variable
-	//    compare old revision with new revision
-	//    if newer revision, store to disk and fetch other data files
-	// if not exists
-	//    store to disk and fetch other data files
-
 }
 
 func (self *repomd) fetchRepomdFile(fileLocation string) error {
