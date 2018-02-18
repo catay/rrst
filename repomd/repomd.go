@@ -1,6 +1,7 @@
 package repomd
 
 import (
+	"compress/gzip"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -15,8 +16,9 @@ type repomd struct {
 	Secret   string
 	CacheDir string
 	//  metadata string = "repomd.xml"
-	Revision string       `xml:"revision"`
-	Data     []repomdData `xml:"data"`
+	Revision    string       `xml:"revision"`
+	Data        []repomdData `xml:"data"`
+	PrimaryData primaryData
 }
 
 type repomdData struct {
@@ -26,7 +28,23 @@ type repomdData struct {
 }
 
 type repomdDataLocation struct {
-	HRef string `xml:"href,attr"`
+	Path string `xml:"href,attr"`
+}
+
+type primaryData struct {
+	Packages string       `xml:"packages,attr"`
+	Package  []rpmPackage `xml:"package"`
+}
+
+type rpmPackage struct {
+	Type string      `xml:"type,attr"`
+	Name string      `xml:"name"`
+	Arch string      `xml:"arch"`
+	Loc  rpmLocation `xml:"location"`
+}
+
+type rpmLocation struct {
+	Path string `xml:"href,attr"`
 }
 
 func NewRepoMd(url, secret string, cacheDir string) *repomd {
@@ -52,16 +70,19 @@ func (self *repomd) Metadata() error {
 
 	if ok {
 		for _, d := range self.Data {
-			fmt.Printf("DEBUG - location: %v\n", d.Location.HRef)
-			if err := self.fetchRepomdFile("/" + d.Location.HRef); err != nil {
+			fmt.Printf("DEBUG - location: %v\n", d.Location.Path)
+			if err := self.fetchRepomdFile("/" + d.Location.Path); err != nil {
 				return err
 			}
 		}
 
 	}
 
-	return nil
+	if err := self.unmarchalPrimaryData(); err != nil {
+		return err
+	}
 
+	return nil
 }
 
 func (self *repomd) unMarshalRepomdData() error {
@@ -178,6 +199,41 @@ func (self *repomd) fetchRepomdFile(fileLocation string) error {
 
 }
 
-//func (self *repomd) Packages() []string {
-// return
-//}
+func (self *repomd) unmarchalPrimaryData() error {
+	var primaryCache string
+
+	for _, d := range self.Data {
+		if d.Type == "primary" {
+			primaryCache = self.CacheDir + "/" + path.Base(d.Location.Path)
+		}
+	}
+
+	f, err := os.Open(primaryCache)
+	if err != nil {
+		return err
+	}
+
+	r, err := gzip.NewReader(f)
+	if err != nil {
+		return err
+	}
+
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
+		return err
+	}
+
+	if err := xml.Unmarshal(data, &self.PrimaryData); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (self *repomd) Packages() []rpmPackage {
+	return self.PrimaryData.Package
+}
+
+func (self *repomd) PackageCount() string {
+	return self.PrimaryData.Packages
+}

@@ -72,6 +72,12 @@ func (self *Repository) Sync() error {
 		return err
 	}
 
+	fmt.Println("Package count:", rm.PackageCount())
+
+	for _, p := range rm.Packages() {
+		fmt.Println("  - ", p.Loc.Path)
+	}
+
 	fmt.Println("  - Read repomd xml file and get package file location")
 	fmt.Println("  - Fetch packages xml file and check hash")
 	fmt.Println("  - Read packages xml file and get packages list and check hash")
