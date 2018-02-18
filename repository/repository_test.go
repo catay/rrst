@@ -1,10 +1,10 @@
-package config_test
+package repository_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/catay/rrst/config"
+	. "github.com/catay/rrst/repository"
 	"os"
 )
 

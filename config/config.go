@@ -2,14 +2,15 @@ package config
 
 import (
 	"fmt"
+	"github.com/catay/rrst/repository"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 )
 
 type ConfigData struct {
-	Version int          `yaml:"version"`
-	Globals globals      `yaml:"globals"`
-	Repos   []Repository `yaml:"repositories"`
+	Version int                     `yaml:"version"`
+	Globals globals                 `yaml:"globals"`
+	Repos   []repository.Repository `yaml:"repositories"`
 }
 
 type globals struct {
