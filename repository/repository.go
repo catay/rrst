@@ -6,19 +6,21 @@ import (
 	"github.com/catay/rrst/api/suse"
 	"github.com/catay/rrst/repomd"
 	"os"
+	"regexp"
 	"strings"
 )
 
 type Repository struct {
-	Name         string `yaml:"name"`
-	RType        string `yaml:"type"`
-	Vendor       string `yaml:"vendor"`
-	RegCode      string `yaml:"reg_code"`
-	RemoteURI    string `yaml:"remote_uri"`
-	LocalURI     string `yaml:"local_uri"`
-	UpdatePolicy string `yaml:"update_policy"`
-	UpdateSuffix string `yaml:"update_suffix"`
-	CacheDir     string `yaml:"cache_dir"`
+	Name            string   `yaml:"name"`
+	RType           string   `yaml:"type"`
+	Vendor          string   `yaml:"vendor"`
+	RegCode         string   `yaml:"reg_code"`
+	RemoteURI       string   `yaml:"remote_uri"`
+	LocalURI        string   `yaml:"local_uri"`
+	UpdatePolicy    string   `yaml:"update_policy"`
+	UpdateSuffix    string   `yaml:"update_suffix"`
+	CacheDir        string   `yaml:"cache_dir"`
+	IncludePatterns []string `yaml:"include_patterns"`
 }
 
 func NewRepository(name string) (r *Repository) {
@@ -41,7 +43,6 @@ func (self *Repository) GetRegCode() (string, bool) {
 }
 
 func (self *Repository) Sync() error {
-
 	var secret string
 
 	if self.Vendor == "SUSE" {
@@ -75,7 +76,13 @@ func (self *Repository) Sync() error {
 	fmt.Println("Package count:", rm.PackageCount())
 
 	for _, p := range rm.Packages() {
-		fmt.Println("  - ", p.Loc.Path)
+		ok, err := self.matchPatterns(self.IncludePatterns, p.Loc.Path)
+		if err != nil {
+			return err
+		}
+		if ok {
+			fmt.Println("  - ", p.Loc.Path)
+		}
 	}
 
 	fmt.Println("  - Read repomd xml file and get package file location")
@@ -84,4 +91,22 @@ func (self *Repository) Sync() error {
 	fmt.Println("  - Download packages to local path if not existing yet and check hash")
 
 	return nil
+}
+
+func (self *Repository) matchPatterns(p []string, s string) (bool, error) {
+	if len(self.IncludePatterns) == 0 {
+		return true, nil
+	}
+
+	for _, p := range p {
+		ok, err := regexp.MatchString(p, s)
+		if err != nil {
+			return false, err
+		}
+
+		if ok {
+			return true, nil
+		}
+	}
+	return false, nil
 }
