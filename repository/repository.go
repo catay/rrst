@@ -75,13 +75,24 @@ func (self *Repository) Sync() error {
 
 	fmt.Println("Package count:", rm.PackageCount())
 
-	for _, p := range rm.Packages() {
+	rpms := rm.Packages()
+
+	for i, p := range rpms {
 		ok, err := self.matchPatterns(self.IncludePatterns, p.Loc.Path)
 		if err != nil {
 			return err
 		}
 		if ok {
-			fmt.Println("  - ", p.Loc.Path)
+			ok, err := self.packageExistsLocal(p)
+			if err != nil {
+				return err
+			}
+
+			if !ok {
+				rpms[i].ToDownload = true
+			}
+
+			fmt.Println("  - ", rpms[i].Loc.Path, rpms[i].ToDownload)
 		}
 	}
 
@@ -109,4 +120,21 @@ func (self *Repository) matchPatterns(p []string, s string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+func (self *Repository) packageExistsLocal(p repomd.RpmPackage) (bool, error) {
+
+	fullPath := self.LocalURI + "/" + p.Loc.Path
+
+	_, err := os.Open(fullPath)
+
+	if err == nil {
+		return true, err
+	} else {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+	}
+
+	return false, err
 }

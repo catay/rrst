@@ -33,14 +33,15 @@ type repomdDataLocation struct {
 
 type primaryData struct {
 	Packages string       `xml:"packages,attr"`
-	Package  []rpmPackage `xml:"package"`
+	Package  []RpmPackage `xml:"package"`
 }
 
-type rpmPackage struct {
-	Type string      `xml:"type,attr"`
-	Name string      `xml:"name"`
-	Arch string      `xml:"arch"`
-	Loc  rpmLocation `xml:"location"`
+type RpmPackage struct {
+	Type       string      `xml:"type,attr"`
+	Name       string      `xml:"name"`
+	Arch       string      `xml:"arch"`
+	Loc        rpmLocation `xml:"location"`
+	ToDownload bool
 }
 
 type rpmLocation struct {
@@ -230,7 +231,7 @@ func (self *repomd) unmarchalPrimaryData() error {
 	return nil
 }
 
-func (self *repomd) Packages() []rpmPackage {
+func (self *repomd) Packages() []RpmPackage {
 	return self.PrimaryData.Package
 }
 
