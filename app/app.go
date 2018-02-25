@@ -13,7 +13,7 @@ type App struct {
 	config *config.ConfigData
 }
 
-func New(configFile string) (a *App, err error) {
+func NewApp(configFile string) (a *App, err error) {
 	a = new(App)
 	a.config, err = config.NewConfig(configFile)
 	if err != nil {

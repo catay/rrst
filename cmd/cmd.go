@@ -39,7 +39,7 @@ func (self *cli) Run() (err error) {
 
 	fmt.Println("config:", *self.configFile)
 
-	r, err := app.New(*self.configFile)
+	r, err := app.NewApp(*self.configFile)
 	if err != nil {
 		return err
 	}
