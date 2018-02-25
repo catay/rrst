@@ -16,6 +16,7 @@ const (
 type cli struct {
 	app        *kingpin.Application
 	configFile *string
+	listCmd    *kingpin.CmdClause
 	syncCmd    *kingpin.CmdClause
 	showCmd    *kingpin.CmdClause
 }
@@ -26,6 +27,7 @@ func New() *cli {
 	c.app.Version(version)
 	c.app.Author(author)
 	c.configFile = c.app.Flag("config", "Set path to configuration file.").Short('c').Default(defaultConfig).String()
+	c.listCmd = c.app.Command("list", "List repository names and description.")
 	c.syncCmd = c.app.Command("sync", "Synchronize remote to local repository sets.")
 	c.showCmd = c.app.Command("show", "Show available repository sets.")
 
@@ -52,6 +54,8 @@ func (self *cli) Run() (err error) {
 	case "show":
 		fmt.Println("command: show")
 		r.Show()
+	case "list":
+		r.List()
 	}
 
 	return

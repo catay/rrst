@@ -26,6 +26,19 @@ func New(configFile string) (a *App, err error) {
 	return
 }
 
+func (self *App) List() {
+
+	fmt.Println("Configured repositories:")
+
+	if len(self.config.Repos) > 0 {
+		for _, r := range self.config.Repos {
+			fmt.Println("  ", r.Name)
+		}
+	} else {
+		fmt.Println("  No configured repositories found.")
+	}
+}
+
 func (self *App) Show() {
 
 	fmt.Println("cache_dir:", self.config.Globals.CacheDir)
