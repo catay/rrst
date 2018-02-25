@@ -36,9 +36,6 @@ func New() *cli {
 
 func (self *cli) Run() (err error) {
 	args := kingpin.MustParse(self.app.Parse(os.Args[1:]))
-
-	fmt.Println("config:", *self.configFile)
-
 	r, err := app.NewApp(*self.configFile)
 	if err != nil {
 		return err
