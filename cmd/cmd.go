@@ -26,7 +26,7 @@ func New() *cli {
 	c.app = kingpin.New("rsst", "Remote Repository Sync Tool")
 	c.app.Version(version)
 	c.app.Author(author)
-	c.configFile = c.app.Flag("config", "Set path to configuration file.").Short('c').Default(defaultConfig).String()
+	c.configFile = c.app.Flag("config", "Path to alternate YAML configuration file.").Short('c').Default(defaultConfig).String()
 	c.listCmd = c.app.Command("list", "List repository names and description.")
 	c.syncCmd = c.app.Command("sync", "Synchronize remote to local repository sets.")
 	c.showCmd = c.app.Command("show", "Show available repository sets.")
