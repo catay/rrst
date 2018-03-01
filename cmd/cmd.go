@@ -14,11 +14,13 @@ const (
 )
 
 type cli struct {
-	app        *kingpin.Application
-	configFile *string
-	listCmd    *kingpin.CmdClause
-	syncCmd    *kingpin.CmdClause
-	showCmd    *kingpin.CmdClause
+	app          *kingpin.Application
+	configFile   *string
+	listCmd      *kingpin.CmdClause
+	syncCmd      *kingpin.CmdClause
+	showCmd      *kingpin.CmdClause
+	cleanCmd     *kingpin.CmdClause
+	cleanArgRepo *string
 }
 
 func New() *cli {
@@ -30,6 +32,8 @@ func New() *cli {
 	c.listCmd = c.app.Command("list", "List repository names and description.")
 	c.syncCmd = c.app.Command("sync", "Synchronize remote to local repository sets.")
 	c.showCmd = c.app.Command("show", "Show available repository sets.")
+	c.cleanCmd = c.app.Command("clean", "Cleanup repository cache.")
+	c.cleanArgRepo = c.cleanCmd.Arg("repo name", "Repository name.").String()
 
 	return c
 }
@@ -53,6 +57,14 @@ func (self *cli) Run() (err error) {
 		r.Show()
 	case "list":
 		r.List()
+	case "clean":
+		if *self.cleanArgRepo != "" {
+			//fmt.Println("command: clean", *self.cleanArgRepo)
+			r.Clean(*self.cleanArgRepo)
+		} else {
+			//fmt.Println("command: clean")
+			r.Clean("")
+		}
 	}
 
 	return

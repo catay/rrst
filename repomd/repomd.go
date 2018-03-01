@@ -48,12 +48,18 @@ type rpmLocation struct {
 	Path string `xml:"href,attr"`
 }
 
-func NewRepoMd(url, secret string, cacheDir string) *repomd {
+func NewRepoMd(url, secret string, cacheDir string) (*repomd, error) {
 	r := new(repomd)
 	r.Url = url
 	r.Secret = secret
 	r.CacheDir = cacheDir
-	return r
+	if err := r.unMarshalRepomdData(); err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+	}
+
+	return r, nil
 }
 
 func (self *repomd) Debug() {
@@ -81,6 +87,22 @@ func (self *repomd) Metadata() error {
 
 	if err := self.unmarchalPrimaryData(); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (self *repomd) Clean() error {
+
+	if err := os.Remove(self.CacheDir + "/" + "/repomd.xml"); err != nil {
+		return err
+	}
+
+	for _, d := range self.Data {
+		fmt.Printf("DEBUG clean - location: %v\n", d.Location.Path)
+		if err := self.removeRepomdFile("/" + d.Location.Path); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -198,6 +220,14 @@ func (self *repomd) fetchRepomdFile(fileLocation string) error {
 
 	return nil
 
+}
+
+func (self *repomd) removeRepomdFile(fileLocation string) error {
+	if err := os.Remove(self.CacheDir + "/" + path.Base(fileLocation)); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (self *repomd) unmarchalPrimaryData() error {

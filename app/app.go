@@ -59,6 +59,39 @@ func (self *App) Sync() (err error) {
 	return nil
 }
 
+func (self *App) Clean(repoName string) {
+
+	fmt.Println("Clean cache repositories:")
+
+	var found bool
+
+	if repoName != "" {
+		for i := range self.config.Repos {
+			if self.config.Repos[i].Name == repoName {
+				fmt.Println("Clean", repoName)
+				self.config.Repos[i].Clean()
+				found = true
+				break
+
+			}
+		}
+
+		if !found {
+			fmt.Println("  No configured repository", repoName, "found.")
+		}
+	} else {
+		if len(self.config.Repos) > 0 {
+			fmt.Println("Clean all")
+			for i := range self.config.Repos {
+				self.config.Repos[i].Clean()
+			}
+
+		} else {
+			fmt.Println("  No configured repositories found.")
+		}
+	}
+}
+
 func (self *App) setCacheDir() {
 	if self.config.Globals.CacheDir == "" {
 		self.config.Globals.CacheDir = cacheDir

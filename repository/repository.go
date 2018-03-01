@@ -46,6 +46,19 @@ func (self *Repository) GetRegCode() (string, bool) {
 	return self.RegCode, true
 }
 
+func (self *Repository) Clean() error {
+	rm, err := repomd.NewRepoMd(self.RemoteURI, self.secret, self.CacheDir+"/"+self.Name)
+	if err != nil {
+		return err
+	}
+
+	if err := rm.Clean(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (self *Repository) Sync() error {
 
 	if self.Vendor == "SUSE" {
@@ -70,7 +83,10 @@ func (self *Repository) Sync() error {
 	}
 
 	fmt.Println("  - Fetch repomd xml file")
-	rm := repomd.NewRepoMd(self.RemoteURI, self.secret, self.CacheDir+"/"+self.Name)
+	rm, err := repomd.NewRepoMd(self.RemoteURI, self.secret, self.CacheDir+"/"+self.Name)
+	if err != nil {
+		return err
+	}
 
 	if err := rm.Metadata(); err != nil {
 		return err
