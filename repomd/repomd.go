@@ -12,13 +12,13 @@ import (
 )
 
 type repomd struct {
-	Url      string
-	Secret   string
-	CacheDir string
-	//  metadata string = "repomd.xml"
-	Revision    string       `xml:"revision"`
-	Data        []repomdData `xml:"data"`
-	PrimaryData primaryData
+	Url                string
+	Secret             string
+	CacheDir           string
+	localRepoCacheFile string
+	Revision           string       `xml:"revision"`
+	Data               []repomdData `xml:"data"`
+	PrimaryData        primaryData
 }
 
 type repomdData struct {
@@ -53,13 +53,33 @@ func NewRepoMd(url, secret string, cacheDir string) (*repomd, error) {
 	r.Url = url
 	r.Secret = secret
 	r.CacheDir = cacheDir
-	if err := r.unMarshalRepomdData(); err != nil {
+	r.localRepoCacheFile = r.CacheDir + "/repomd.xml"
+
+	// load local cache if present
+	if err := r.loadFromLocalRepoCache(); err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
 		}
 	}
 
 	return r, nil
+}
+
+// private methods
+
+// Load the struct variables with data from the locally cached
+// repomd XML file if present.
+func (self *repomd) loadFromLocalRepoCache() error {
+	data, err := ioutil.ReadFile(self.localRepoCacheFile)
+	if err != nil {
+		return err
+	}
+
+	if err := xml.Unmarshal(data, self); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (self *repomd) Debug() {
@@ -103,20 +123,6 @@ func (self *repomd) Clean() error {
 		if err := self.removeRepomdFile("/" + d.Location.Path); err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-func (self *repomd) unMarshalRepomdData() error {
-
-	data, err := ioutil.ReadFile(self.CacheDir + "/repomd.xml")
-	if err != nil {
-		return err
-	}
-
-	if err := xml.Unmarshal(data, self); err != nil {
-		return err
 	}
 
 	return nil
