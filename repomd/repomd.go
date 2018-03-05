@@ -82,6 +82,10 @@ func (self *repomd) loadFromLocalRepoCache() error {
 	return nil
 }
 
+// public methods
+
+// old methods
+
 func (self *repomd) Debug() {
 	fmt.Printf("Url: %v\n", self.Url)
 	fmt.Printf("Secret: %v\n", self.Secret)
@@ -164,13 +168,8 @@ func (self *repomd) refreshRepomd() (bool, error) {
 		return ok, err
 	}
 
-	f, err := ioutil.ReadFile(repomdFile)
-
-	if err == nil {
-		if err := xml.Unmarshal(f, self); err != nil {
-			return ok, err
-		}
-	} else {
+	// load local cache if present
+	if err := self.loadFromLocalRepoCache(); err != nil {
 		if !os.IsNotExist(err) {
 			return ok, err
 		}
