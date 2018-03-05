@@ -146,7 +146,6 @@ func (self *repomd) Clean() error {
 
 func (self *repomd) refreshRepomd() (bool, error) {
 
-	repomdFile := self.CacheDir + "/repomd.xml"
 	ok := false
 
 	resp, err := http.Get(self.Url + "/repodata/repomd.xml" + "?" + self.Secret)
@@ -202,7 +201,7 @@ func (self *repomd) refreshRepomd() (bool, error) {
 			}
 		}
 
-		if err := ioutil.WriteFile(repomdFile, content, 0600); err != nil {
+		if err := ioutil.WriteFile(self.localRepoCacheFile, content, 0600); err != nil {
 			return ok, err
 		}
 	}
