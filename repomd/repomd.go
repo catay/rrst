@@ -162,9 +162,15 @@ func (self *repomd) refreshRepomd() (bool, error) {
 		return ok, err
 	}
 
-	t := *self
+	// create new temporary repomd to store remote repomd.xml content
+	t := &repomd{
+		Url:                self.Url,
+		Secret:             self.Secret,
+		CacheDir:           self.CacheDir,
+		localRepoCacheFile: self.localRepoCacheFile,
+	}
 
-	if err := xml.Unmarshal(content, &t); err != nil {
+	if err := xml.Unmarshal(content, t); err != nil {
 		return ok, err
 	}
 
@@ -178,7 +184,14 @@ func (self *repomd) refreshRepomd() (bool, error) {
 	if t.Revision != self.Revision {
 		ok = true
 		fmt.Println("DEBUG: repomd REVISION OUTDATED !!!")
-		*self = t
+		// clean current cache
+		if err := self.Clean(); err != nil {
+			if !os.IsNotExist(err) {
+				return ok, err
+			}
+		}
+
+		*self = *t
 
 		// check if dir exists, if not create it
 		if _, err := os.Stat(self.CacheDir); os.IsNotExist(err) {
