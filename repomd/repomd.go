@@ -48,12 +48,16 @@ type rpmLocation struct {
 	Path string `xml:"href,attr"`
 }
 
+// public methods
+
+// repomd constructor
 func NewRepoMd(url, secret string, cacheDir string) (*repomd, error) {
-	r := new(repomd)
-	r.Url = url
-	r.Secret = secret
-	r.CacheDir = cacheDir
-	r.localRepoCacheFile = r.CacheDir + "/repomd.xml"
+	r := &repomd{
+		Url:                url,
+		Secret:             secret,
+		CacheDir:           cacheDir,
+		localRepoCacheFile: cacheDir + "/repomd.xml",
+	}
 
 	// load local cache if present
 	if err := r.loadFromLocalRepoCache(); err != nil {
@@ -81,8 +85,6 @@ func (self *repomd) loadFromLocalRepoCache() error {
 
 	return nil
 }
-
-// public methods
 
 // old methods
 
