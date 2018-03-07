@@ -12,13 +12,14 @@ import (
 )
 
 type repomd struct {
-	Url                string
-	Secret             string
-	CacheDir           string
-	localRepoCacheFile string
-	Revision           string       `xml:"revision"`
-	Data               []repomdData `xml:"data"`
-	PrimaryData        primaryData
+	Url                 string
+	Secret              string
+	CacheDir            string
+	localRepoCacheFile  string
+	remoteRepoCacheFile string
+	Revision            string       `xml:"revision"`
+	Data                []repomdData `xml:"data"`
+	PrimaryData         primaryData
 }
 
 type repomdData struct {
@@ -53,10 +54,11 @@ type rpmLocation struct {
 // repomd constructor
 func NewRepoMd(url, secret string, cacheDir string) (*repomd, error) {
 	r := &repomd{
-		Url:                url,
-		Secret:             secret,
-		CacheDir:           cacheDir,
-		localRepoCacheFile: cacheDir + "/repomd.xml",
+		Url:                 url,
+		Secret:              secret,
+		CacheDir:            cacheDir,
+		localRepoCacheFile:  cacheDir + "/repomd.xml",
+		remoteRepoCacheFile: url + "/repodata/repomd.xml",
 	}
 
 	// load local cache if present
@@ -84,6 +86,32 @@ func (self *repomd) loadFromLocalRepoCache() error {
 	}
 
 	return nil
+}
+
+// Load the struct variables with data from the remote repomd XML file
+// if present.
+func (self *repomd) loadFromRemoteRepoCache() ([]byte, error) {
+
+	resp, err := http.Get(self.remoteRepoCacheFile + "?" + self.Secret)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, errors.New(fmt.Sprintf("HTTP error %v ", resp.StatusCode))
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := xml.Unmarshal(data, self); err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 // old methods
@@ -148,30 +176,22 @@ func (self *repomd) refreshRepomd() (bool, error) {
 
 	ok := false
 
-	resp, err := http.Get(self.Url + "/repodata/repomd.xml" + "?" + self.Secret)
-	if err != nil {
-		return ok, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return ok, errors.New(fmt.Sprintf("HTTP error %v ", resp.StatusCode))
-	}
-
-	content, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return ok, err
-	}
-
 	// create new temporary repomd to store remote repomd.xml content
+	//t, err := NewRepoMd(self.Url, self.Secret, self.CacheDir)
+	//if err != nil {
+	//	return ok, err
+	//}
+
 	t := &repomd{
-		Url:                self.Url,
-		Secret:             self.Secret,
-		CacheDir:           self.CacheDir,
-		localRepoCacheFile: self.localRepoCacheFile,
+		Url:                 self.Url,
+		Secret:              self.Secret,
+		CacheDir:            self.CacheDir,
+		localRepoCacheFile:  self.CacheDir + "/repomd.xml",
+		remoteRepoCacheFile: self.Url + "/repodata/repomd.xml",
 	}
 
-	if err := xml.Unmarshal(content, t); err != nil {
+	content, err := t.loadFromRemoteRepoCache()
+	if err != nil {
 		return ok, err
 	}
 
