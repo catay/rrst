@@ -114,6 +114,19 @@ func (self *repomd) loadFromRemoteRepoCache() ([]byte, error) {
 	return data, nil
 }
 
+// Create the cache directory if it doesn't exist.
+// If it exists, do nothing.
+func (self *repomd) createCacheDir() error {
+	_, err := os.Stat(self.CacheDir)
+	if os.IsNotExist(err) {
+		if err := os.Mkdir(self.CacheDir, 0700); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // old methods
 
 func (self *repomd) Debug() {
@@ -205,7 +218,7 @@ func (self *repomd) refreshRepomd() (bool, error) {
 	if t.Revision != self.Revision {
 		ok = true
 		fmt.Println("DEBUG: repomd REVISION OUTDATED !!!")
-		// clean current cache
+		// clean current cache if present
 		if err := self.Clean(); err != nil {
 			if !os.IsNotExist(err) {
 				return ok, err
@@ -214,12 +227,16 @@ func (self *repomd) refreshRepomd() (bool, error) {
 
 		*self = *t
 
-		// check if dir exists, if not create it
-		if _, err := os.Stat(self.CacheDir); os.IsNotExist(err) {
-			if err := os.Mkdir(self.CacheDir, 0700); err != nil {
-				return ok, err
-			}
+		if err := self.createCacheDir(); err != nil {
+			return ok, err
 		}
+
+		// check if dir exists, if not create it
+		//if _, err := os.Stat(self.CacheDir); os.IsNotExist(err) {
+		//	if err := os.Mkdir(self.CacheDir, 0700); err != nil {
+		//		return ok, err
+		//	}
+		//}
 
 		if err := ioutil.WriteFile(self.localRepoCacheFile, content, 0600); err != nil {
 			return ok, err
