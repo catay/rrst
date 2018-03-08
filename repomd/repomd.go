@@ -161,7 +161,7 @@ func (self *repomd) Metadata() error {
 
 func (self *repomd) Clean() error {
 
-	if err := os.Remove(self.CacheDir + "/" + "/repomd.xml"); err != nil {
+	if err := os.Remove(self.localRepoCacheFile); err != nil {
 		return err
 	}
 
