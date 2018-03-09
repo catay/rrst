@@ -128,6 +128,16 @@ func (self *repomd) createCacheDir() error {
 	return nil
 }
 
+// Compare the revision of two repomd objets.
+// Return true if the receiver has an outdated revision.
+func (self *repomd) hasOutdatedRevision(r *repomd) bool {
+	if self.Revision < r.Revision {
+		return true
+	}
+
+	return false
+}
+
 // old methods
 
 func (self *repomd) Debug() {
@@ -216,7 +226,9 @@ func (self *repomd) refreshRepomd() (bool, error) {
 		}
 	}
 
-	if t.Revision != self.Revision {
+	if self.hasOutdatedRevision(t) {
+
+		//if t.Revision != self.Revision {
 		ok = true
 		fmt.Println("DEBUG: repomd REVISION OUTDATED !!!")
 		// clean current cache if present
