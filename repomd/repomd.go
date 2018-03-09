@@ -23,9 +23,10 @@ type repomd struct {
 }
 
 type repomdData struct {
-	Type     string             `xml:"type,attr"`
-	Size     string             `xml:"size"`
-	Location repomdDataLocation `xml:"location"`
+	Type      string             `xml:"type,attr"`
+	Size      string             `xml:"size"`
+	Timestamp string             `xml:"timestamp"`
+	Location  repomdDataLocation `xml:"location"`
 }
 
 type repomdDataLocation struct {
