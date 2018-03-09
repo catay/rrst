@@ -200,12 +200,6 @@ func (self *repomd) refreshRepomd() (bool, error) {
 
 	ok := false
 
-	// create new temporary repomd to store remote repomd.xml content
-	//t, err := NewRepoMd(self.Url, self.Secret, self.CacheDir)
-	//if err != nil {
-	//	return ok, err
-	//}
-
 	t := &repomd{
 		Url:                 self.Url,
 		Secret:              self.Secret,
@@ -227,8 +221,6 @@ func (self *repomd) refreshRepomd() (bool, error) {
 	}
 
 	if self.hasOutdatedRevision(t) {
-
-		//if t.Revision != self.Revision {
 		ok = true
 		fmt.Println("DEBUG: repomd REVISION OUTDATED !!!")
 		// clean current cache if present
@@ -243,13 +235,6 @@ func (self *repomd) refreshRepomd() (bool, error) {
 		if err := self.createCacheDir(); err != nil {
 			return ok, err
 		}
-
-		// check if dir exists, if not create it
-		//if _, err := os.Stat(self.CacheDir); os.IsNotExist(err) {
-		//	if err := os.Mkdir(self.CacheDir, 0700); err != nil {
-		//		return ok, err
-		//	}
-		//}
 
 		if err := ioutil.WriteFile(self.localRepoCacheFile, content, 0600); err != nil {
 			return ok, err
