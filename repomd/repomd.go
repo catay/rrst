@@ -11,7 +11,7 @@ import (
 	"path"
 )
 
-type repomd struct {
+type Repomd struct {
 	Url                 string
 	Secret              string
 	CacheDir            string
@@ -53,8 +53,8 @@ type rpmLocation struct {
 // public methods
 
 // repomd constructor
-func NewRepoMd(url, secret string, cacheDir string) (*repomd, error) {
-	r := &repomd{
+func NewRepoMd(url, secret string, cacheDir string) (*Repomd, error) {
+	r := &Repomd{
 		Url:                 url,
 		Secret:              secret,
 		CacheDir:            cacheDir,
@@ -76,7 +76,7 @@ func NewRepoMd(url, secret string, cacheDir string) (*repomd, error) {
 
 // Load the struct variables with data from the locally cached
 // repomd XML file if present.
-func (self *repomd) loadFromLocalRepoCache() error {
+func (self *Repomd) loadFromLocalRepoCache() error {
 	data, err := ioutil.ReadFile(self.localRepoCacheFile)
 	if err != nil {
 		return err
@@ -91,7 +91,7 @@ func (self *repomd) loadFromLocalRepoCache() error {
 
 // Load the struct variables with data from the remote repomd XML file
 // if present.
-func (self *repomd) loadFromRemoteRepoCache() ([]byte, error) {
+func (self *Repomd) loadFromRemoteRepoCache() ([]byte, error) {
 
 	resp, err := http.Get(self.remoteRepoCacheFile + "?" + self.Secret)
 	if err != nil {
@@ -117,7 +117,7 @@ func (self *repomd) loadFromRemoteRepoCache() ([]byte, error) {
 
 // Create the cache directory if it doesn't exist.
 // If it exists, do nothing.
-func (self *repomd) createCacheDir() error {
+func (self *Repomd) createCacheDir() error {
 	_, err := os.Stat(self.CacheDir)
 	if os.IsNotExist(err) {
 		if err := os.Mkdir(self.CacheDir, 0700); err != nil {
@@ -130,7 +130,7 @@ func (self *repomd) createCacheDir() error {
 
 // Compare the revision of two repomd objets.
 // Return true if the receiver has an outdated revision.
-func (self *repomd) hasOutdatedRevision(r *repomd) bool {
+func (self *Repomd) hasOutdatedRevision(r *Repomd) bool {
 	if self.Revision < r.Revision {
 		return true
 	}
@@ -140,12 +140,12 @@ func (self *repomd) hasOutdatedRevision(r *repomd) bool {
 
 // old methods
 
-func (self *repomd) Debug() {
+func (self *Repomd) Debug() {
 	fmt.Printf("Url: %v\n", self.Url)
 	fmt.Printf("Secret: %v\n", self.Secret)
 }
 
-func (self *repomd) Metadata() error {
+func (self *Repomd) Metadata() error {
 
 	ok, err := self.refreshRepomd()
 
@@ -170,7 +170,7 @@ func (self *repomd) Metadata() error {
 	return nil
 }
 
-func (self *repomd) Clean() error {
+func (self *Repomd) Clean() error {
 
 	if err := os.Remove(self.localRepoCacheFile); err != nil {
 		return err
@@ -196,11 +196,11 @@ func (self *repomd) Clean() error {
 // if not exists
 //    store to disk and fetch other data files
 
-func (self *repomd) refreshRepomd() (bool, error) {
+func (self *Repomd) refreshRepomd() (bool, error) {
 
 	ok := false
 
-	t := &repomd{
+	t := &Repomd{
 		Url:                 self.Url,
 		Secret:              self.Secret,
 		CacheDir:            self.CacheDir,
@@ -244,7 +244,7 @@ func (self *repomd) refreshRepomd() (bool, error) {
 	return ok, nil
 }
 
-func (self *repomd) fetchRepomdFile(fileLocation string) error {
+func (self *Repomd) fetchRepomdFile(fileLocation string) error {
 
 	resp, err := http.Get(self.Url + fileLocation + "?" + self.Secret)
 	if err != nil {
@@ -276,7 +276,7 @@ func (self *repomd) fetchRepomdFile(fileLocation string) error {
 
 }
 
-func (self *repomd) removeRepomdFile(fileLocation string) error {
+func (self *Repomd) removeRepomdFile(fileLocation string) error {
 	if err := os.Remove(self.CacheDir + "/" + path.Base(fileLocation)); err != nil {
 		return err
 	}
@@ -284,7 +284,7 @@ func (self *repomd) removeRepomdFile(fileLocation string) error {
 	return nil
 }
 
-func (self *repomd) unmarchalPrimaryData() error {
+func (self *Repomd) unmarchalPrimaryData() error {
 	var primaryCache string
 
 	for _, d := range self.Data {
@@ -315,10 +315,10 @@ func (self *repomd) unmarchalPrimaryData() error {
 	return nil
 }
 
-func (self *repomd) Packages() []RpmPackage {
+func (self *Repomd) Packages() []RpmPackage {
 	return self.PrimaryData.Package
 }
 
-func (self *repomd) PackageCount() string {
+func (self *Repomd) PackageCount() string {
 	return self.PrimaryData.Packages
 }
