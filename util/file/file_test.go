@@ -57,4 +57,27 @@ var _ = Describe("File package: ", func() {
 			})
 		})
 	})
+
+	Describe("Given a function IsDirectory(name string)", func() {
+		Context("when passing an existing directory as argument", func() {
+			It("should return true", func() {
+				v := IsDirectory(existingDirName)
+				Expect(v).To(BeTrue())
+			})
+		})
+
+		Context("when passing a non-existing directory as argument", func() {
+			It("should return false", func() {
+				v := IsDirectory(nonExistingDirName)
+				Expect(v).To(BeFalse())
+			})
+		})
+
+		Context("when passing an existing regular file as argument", func() {
+			It("should return false", func() {
+				v := IsDirectory(existingFileName)
+				Expect(v).To(BeFalse())
+			})
+		})
+	})
 })

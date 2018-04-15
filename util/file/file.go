@@ -16,3 +16,16 @@ func IsRegularFile(name string) bool {
 	}
 	return false
 }
+
+func IsDirectory(name string) bool {
+	fi, err := os.Stat(name)
+
+	if err != nil {
+		return false
+	}
+
+	if fi.IsDir() {
+		return true
+	}
+	return false
+}
