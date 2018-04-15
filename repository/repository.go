@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"github.com/catay/rrst/api/suse"
 	"github.com/catay/rrst/repomd"
+	"github.com/catay/rrst/util/file"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type Repository struct {
@@ -25,6 +27,8 @@ type Repository struct {
 	CacheDir        string   `yaml:"cache_dir"`
 	IncludePatterns []string `yaml:"include_patterns"`
 	secret          string
+	topLevelDir     string
+	metadata        *repomd.Repomd
 }
 
 func NewRepository(name string) (r *Repository) {
@@ -33,6 +37,16 @@ func NewRepository(name string) (r *Repository) {
 	}
 
 	return
+}
+
+func (self *Repository) GetUpdatePolicy() string {
+	// return the policy string and set default to merge
+	switch self.UpdatePolicy {
+	case "stage":
+		return self.UpdatePolicy
+	default:
+		return "merge"
+	}
 }
 
 func (self *Repository) GetRegCode() (string, bool) {
@@ -61,6 +75,8 @@ func (self *Repository) Clean() error {
 
 func (self *Repository) Sync() error {
 
+	var err error = nil
+
 	if self.Vendor == "SUSE" {
 		fmt.Println("  - Fetch SUSE products json if older then x hours")
 
@@ -83,39 +99,64 @@ func (self *Repository) Sync() error {
 	}
 
 	fmt.Println("  - Fetch repomd xml file")
-	rm, err := repomd.NewRepoMd(self.RemoteURI, self.secret, self.CacheDir+"/"+self.Name)
+	self.metadata, err = repomd.NewRepoMd(self.RemoteURI, self.secret, self.CacheDir+"/"+self.Name)
 	if err != nil {
 		return err
 	}
 
-	if err := rm.Metadata(); err != nil {
+	if err := self.metadata.Metadata(); err != nil {
 		return err
 	}
 
-	fmt.Println("Package count:", rm.PackageCount())
+	fmt.Println("Package count:", self.metadata.PackageCount())
 
-	rpms := rm.Packages()
+	// given a repository
 
-	for i, p := range rpms {
-		ok, err := self.matchPatterns(self.IncludePatterns, p.Loc.Path)
-		if err != nil {
-			return err
+	// when update policy is set to stage
+	// and main dir does not exist
+	// then topLevelDir should be set to 'main'
+
+	// when update policy is set to stage
+	// and main dir does exist
+	// then topLevelDir should be set to 'current timestamp'
+
+	// when update policy is set to merge
+	// and main dir does not exist
+	// then topLevelDir should be set to 'main'
+
+	// when update policy is set to merge
+	// and main dir does exist
+	// then topLevelDir should be set to 'main'
+
+	self.topLevelDir = self.LocalURI + "/" + "main"
+
+	if self.GetUpdatePolicy() == "stage" {
+		if file.IsDirectory(self.topLevelDir) {
+			t := time.Now()
+			timeStamp := fmt.Sprintf("%02d%02d%02d-%02d%02d%02d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+			self.topLevelDir = self.LocalURI + "/" + timeStamp
+		} else {
+			self.topLevelDir = self.LocalURI + "/" + "main"
 		}
-		if ok {
-			ok, err := self.packageExistsLocal(p)
-			if err != nil {
-				return err
-			}
 
-			if !ok {
-				rpms[i].ToDownload = true
-			}
-
-			//		fmt.Println("  - ", rpms[i].Loc.Path, rpms[i].ToDownload)
-		}
 	}
 
+	// create toplevel dir
+	if err := os.MkdirAll(self.LocalURI, 0755); err != nil {
+		return err
+	}
+
+	if err := self.markPackagesForDownload(); err != nil {
+		return err
+	}
+
+	rpms := self.metadata.Packages()
+
+	//fmt.Println("DEBUG - POLICY - ", self.GetUpdatePolicy())
+	//fmt.Println("DEBUG - TOPDIR - ", self.topLevelDir)
+
 	for _, p := range rpms {
+		//fmt.Printf("package: %v  download: %v\n", p.Name, p.ToDownload)
 		if p.ToDownload {
 			if err := self.downloadPackage(p); err != nil {
 				return err
@@ -149,6 +190,55 @@ func (self *Repository) matchPatterns(p []string, s string) (bool, error) {
 	return false, nil
 }
 
+func (self *Repository) markPackagesForDownload() error {
+
+	var localPackages []string
+
+	// build list of local rpm filepaths and store it in localPackages
+	err := filepath.Walk(self.LocalURI, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.Mode().IsRegular() && strings.HasSuffix(path, "rpm") {
+			localPackages = append(localPackages, path)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	for i, p := range self.metadata.Packages() {
+		ok, err := self.matchPatterns(self.IncludePatterns, p.Loc.Path)
+		if err != nil {
+			return err
+		}
+
+		if ok {
+			//fmt.Printf("DEBUG MARK p: %v\n", p.Loc.Path)
+			self.metadata.PrimaryData.Package[i].ToDownload = true
+			//self.metadata.Packages()[i].ToDownload = true
+			//p.ToDownload = true
+
+			for _, lp := range localPackages {
+				if strings.HasSuffix(lp, p.Loc.Path) {
+					//p.ToDownload = false
+					self.metadata.PrimaryData.Package[i].ToDownload = false
+					//	self.metadata.Packages()[i].ToDownload = false
+				}
+
+			}
+
+		}
+	}
+
+	return nil
+
+}
+
 func (self *Repository) packageExistsLocal(p repomd.RpmPackage) (bool, error) {
 
 	fullPath := self.LocalURI + "/" + p.Loc.Path
@@ -168,9 +258,9 @@ func (self *Repository) packageExistsLocal(p repomd.RpmPackage) (bool, error) {
 
 func (self *Repository) downloadPackage(p repomd.RpmPackage) error {
 
-	rpmDir := self.LocalURI + "/" + filepath.Dir(p.Loc.Path)
+	rpmDir := self.topLevelDir + "/" + filepath.Dir(p.Loc.Path)
 	remoteRpmPath := self.RemoteURI + "/" + p.Loc.Path + "?" + self.secret
-	localRpmPath := self.LocalURI + "/" + p.Loc.Path
+	localRpmPath := self.topLevelDir + "/" + p.Loc.Path
 
 	// create dir
 	if err := os.MkdirAll(rpmDir, 0755); err != nil {
