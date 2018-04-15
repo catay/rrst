@@ -1,0 +1,45 @@
+globals:
+  cache_dir: /var/tmp/rrst/cache
+repositories:
+  - name: SLES-12-3-X86_64-updates
+    type: rpmmd
+    vendor: SUSE
+    reg_code: ${SCC_REG_CODE_01}
+    remote_uri: https://updates.suse.com/SUSE/Updates/SLE-SERVER/12-SP3/x86_64/update
+    local_uri: /var/tmp/packages/SLES/12/3/x86_64/updates
+    update_policy: stage
+    update_suffix: timestamp|epoch
+    include_patterns:
+      - '.*bash-.4'
+      - 'x86_64/bind-9.9.9P1-63.7.1.x86_64.rpm'
+  - name: SLES-11-4-X86_64-updates
+    type: rpmmd
+    vendor: SUSE
+    reg_code: ${SCC_REG_CODE_02}
+    remote_uri: https://updates.suse.com/repo/$RCE/SLES11-SP4-Updates/sle-11-x86_64
+    local_uri: /var/tmp/packages/SLES/11/3/x86_64/updates
+    update_policy: merge
+    update_suffix: timestamp|epoch
+    include_patterns: 
+      - '.*bash.*'
+  - name: RHEL-7-4-X86_64-os
+    type: rpmmd
+    vendor: redhat
+    reg_code: '' 
+    remote_uri: http://mirror.centos.org/centos/7.4.1708/os/x86_64
+    local_uri: /var/tmp/packages/RHEL/7/4/x86_64/os
+    update_policy: stage
+    update_suffix: timestamp|epoch
+    include_patterns:
+      - '.*bash.*'
+      - 'x86_64/bind-9.9.9P1-63.7.1.x86_64.rpm'
+  - name: SLES-12-3-X86_64-opensuse
+    type: rpmmd
+    vendor: opensuse
+    reg_code: '' 
+    remote_uri: https://download.opensuse.org/repositories/network:/utilities/SLE_12_SP3
+    local_uri: /var/tmp/packages/SLES/12/3/x86_64/opensuse 
+    update_policy: merge
+    update_suffix: timestamp|epoch
+    include_patterns:
+      - '.*nping-7.60-90.4.x86_64.rpm$'
