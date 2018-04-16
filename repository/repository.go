@@ -66,6 +66,8 @@ func (self *Repository) Clean() error {
 		return err
 	}
 
+	fmt.Printf("  * %s\n", self.Name)
+
 	if err := rm.Clean(); err != nil {
 		return err
 	}

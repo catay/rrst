@@ -94,7 +94,6 @@ func (self *App) Clean(repoName string) (err error) {
 	if repoName != "" {
 		for i := range self.config.Repos {
 			if self.config.Repos[i].Name == repoName {
-				fmt.Println("Clean", repoName)
 				if err := self.config.Repos[i].Clean(); err != nil {
 					return err
 				}
@@ -109,7 +108,6 @@ func (self *App) Clean(repoName string) (err error) {
 		}
 	} else {
 		if len(self.config.Repos) > 0 {
-			fmt.Println("Clean all")
 			for i := range self.config.Repos {
 				if err := self.config.Repos[i].Clean(); err != nil {
 					return err
