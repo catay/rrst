@@ -20,6 +20,7 @@ type cli struct {
 	syncCmd      *kingpin.CmdClause
 	showCmd      *kingpin.CmdClause
 	cleanCmd     *kingpin.CmdClause
+	syncArgRepo  *string
 	cleanArgRepo *string
 }
 
@@ -31,6 +32,7 @@ func New() *cli {
 	c.configFile = c.app.Flag("config", "Path to alternate YAML configuration file.").Short('c').Default(defaultConfig).String()
 	c.listCmd = c.app.Command("list", "List repository names and description.")
 	c.syncCmd = c.app.Command("sync", "Synchronize remote to local repository sets.")
+	c.syncArgRepo = c.syncCmd.Arg("repo name", "Repository name.").String()
 	c.showCmd = c.app.Command("show", "Show available repository sets.")
 	c.cleanCmd = c.app.Command("clean", "Cleanup repository cache.")
 	c.cleanArgRepo = c.cleanCmd.Arg("repo name", "Repository name.").String()
@@ -47,11 +49,16 @@ func (self *cli) Run() (err error) {
 
 	switch args {
 	case "sync":
-		fmt.Println("command: sync")
-		if err := r.Sync(); err != nil {
-			return err
-		}
 
+		if *self.syncArgRepo != "" {
+			if err := r.Sync(*self.syncArgRepo); err != nil {
+				return err
+			}
+		} else {
+			if err := r.Sync(""); err != nil {
+				return err
+			}
+		}
 	case "show":
 		fmt.Println("command: show")
 		r.Show()

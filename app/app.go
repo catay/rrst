@@ -49,13 +49,41 @@ func (self *App) Show() {
 	}
 }
 
-func (self *App) Sync() (err error) {
-	for _, r := range self.config.Repos {
-		fmt.Println("*", r.Name)
-		if err := r.Sync(); err != nil {
-			return err
+func (self *App) Sync(repoName string) (err error) {
+
+	fmt.Println("Sync repositories:")
+
+	var found bool
+
+	if repoName != "" {
+		for i := range self.config.Repos {
+			if self.config.Repos[i].Name == repoName {
+				fmt.Println("Sync", repoName)
+				if err := self.config.Repos[i].Sync(); err != nil {
+					return err
+				}
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			fmt.Println("  No configured repository", repoName, "found.")
+		}
+	} else {
+		if len(self.config.Repos) > 0 {
+			fmt.Println("Sync all")
+			for i := range self.config.Repos {
+				if err := self.config.Repos[i].Sync(); err != nil {
+					return err
+				}
+			}
+
+		} else {
+			fmt.Println("  No configured repositories found.")
 		}
 	}
+
 	return nil
 }
 
