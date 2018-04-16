@@ -77,8 +77,10 @@ func (self *Repository) Sync() error {
 
 	var err error = nil
 
+	fmt.Printf("  * %s\n", self.Name)
+
 	if self.Vendor == "SUSE" {
-		fmt.Println("  - Fetch SUSE products json if older then x hours")
+		//fmt.Println("  - Fetch SUSE products json if older then x hours")
 
 		regCode, ok := self.GetRegCode()
 		if !ok {
@@ -90,7 +92,7 @@ func (self *Repository) Sync() error {
 			return err
 		}
 
-		fmt.Println("  - Get secret hash for give URL repo")
+		//fmt.Println("  - Get secret hash for give URL repo")
 
 		self.secret, ok = scc.GetSecretURI(self.RemoteURI)
 		if !ok {
@@ -98,7 +100,7 @@ func (self *Repository) Sync() error {
 		}
 	}
 
-	fmt.Println("  - Fetch repomd xml file")
+	//fmt.Println("  - Fetch repomd xml file")
 	self.metadata, err = repomd.NewRepoMd(self.RemoteURI, self.secret, self.CacheDir+"/"+self.Name)
 	if err != nil {
 		return err
@@ -108,7 +110,7 @@ func (self *Repository) Sync() error {
 		return err
 	}
 
-	fmt.Println("Package count:", self.metadata.PackageCount())
+	//fmt.Println("Package count:", self.metadata.PackageCount())
 
 	// given a repository
 
@@ -164,10 +166,10 @@ func (self *Repository) Sync() error {
 		}
 	}
 
-	fmt.Println("  - Read repomd xml file and get package file location")
-	fmt.Println("  - Fetch packages xml file and check hash")
-	fmt.Println("  - Read packages xml file and get packages list and check hash")
-	fmt.Println("  - Download packages to local path if not existing yet and check hash")
+	//fmt.Println("  - Read repomd xml file and get package file location")
+	//fmt.Println("  - Fetch packages xml file and check hash")
+	//fmt.Println("  - Read packages xml file and get packages list and check hash")
+	//fmt.Println("  - Download packages to local path if not existing yet and check hash")
 
 	return nil
 }
@@ -290,7 +292,7 @@ func (self *Repository) downloadPackage(p repomd.RpmPackage) error {
 		return errors.New(fmt.Sprintf("HTTP error %v ", resp.StatusCode))
 	}
 
-	fmt.Printf("* %s ... ", p.Loc.Path)
+	fmt.Printf("    >> %-70s ... ", p.Loc.Path)
 
 	buf := make([]byte, 0, 1)
 	var nbytes int64
@@ -302,7 +304,7 @@ func (self *Repository) downloadPackage(p repomd.RpmPackage) error {
 		f.Write(buf)
 
 		if err == io.EOF {
-			fmt.Println("successfull")
+			fmt.Println("done")
 			break
 		}
 	}
