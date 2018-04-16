@@ -87,7 +87,7 @@ func (self *App) Sync(repoName string) (err error) {
 	return nil
 }
 
-func (self *App) Clean(repoName string) {
+func (self *App) Clean(repoName string) (err error) {
 
 	fmt.Println("Clean cache repositories:")
 
@@ -97,7 +97,9 @@ func (self *App) Clean(repoName string) {
 		for i := range self.config.Repos {
 			if self.config.Repos[i].Name == repoName {
 				fmt.Println("Clean", repoName)
-				self.config.Repos[i].Clean()
+				if err := self.config.Repos[i].Clean(); err != nil {
+					return err
+				}
 				found = true
 				break
 
@@ -111,13 +113,17 @@ func (self *App) Clean(repoName string) {
 		if len(self.config.Repos) > 0 {
 			fmt.Println("Clean all")
 			for i := range self.config.Repos {
-				self.config.Repos[i].Clean()
+				if err := self.config.Repos[i].Clean(); err != nil {
+					return err
+				}
 			}
 
 		} else {
 			fmt.Println("  No configured repositories found.")
 		}
 	}
+
+	return nil
 }
 
 func (self *App) setCacheDir() {

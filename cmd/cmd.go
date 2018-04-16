@@ -58,14 +58,10 @@ func (self *cli) Run() (err error) {
 	case "list":
 		r.List()
 	case "clean":
-		if *self.cleanArgRepo != "" {
-			//fmt.Println("command: clean", *self.cleanArgRepo)
-			r.Clean(*self.cleanArgRepo)
-		} else {
-			//fmt.Println("command: clean")
-			r.Clean("")
+		if err := r.Clean(*self.cleanArgRepo); err != nil {
+			return err
 		}
 	}
 
-	return
+	return nil
 }
