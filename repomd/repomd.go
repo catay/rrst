@@ -155,7 +155,6 @@ func (self *Repomd) Metadata() error {
 
 	if ok {
 		for _, d := range self.Data {
-			fmt.Printf("DEBUG - location: %v\n", d.Location.Path)
 			if err := self.fetchRepomdFile("/" + d.Location.Path); err != nil {
 				return err
 			}
@@ -177,7 +176,6 @@ func (self *Repomd) Clean() error {
 	}
 
 	for _, d := range self.Data {
-		fmt.Printf("DEBUG clean - location: %v\n", d.Location.Path)
 		if err := self.removeRepomdFile("/" + d.Location.Path); err != nil {
 			return err
 		}
@@ -222,7 +220,7 @@ func (self *Repomd) refreshRepomd() (bool, error) {
 
 	if self.hasOutdatedRevision(t) {
 		ok = true
-		fmt.Println("DEBUG: repomd REVISION OUTDATED !!!")
+		fmt.Println("Refresh repomd cache ...")
 		// clean current cache if present
 		if err := self.Clean(); err != nil {
 			if !os.IsNotExist(err) {
