@@ -56,7 +56,7 @@ Commands:
   list
     List repository names and description.
 
-  sync
+  sync [<repo name>]
     Synchronize remote to local repository sets.
 
   show
