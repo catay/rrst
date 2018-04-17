@@ -53,20 +53,12 @@ func (self *App) Sync(repoName string) (err error) {
 
 	fmt.Println("Sync repositories:")
 
-	var found bool
-
 	if repoName != "" {
-		for i := range self.config.Repos {
-			if self.config.Repos[i].Name == repoName {
-				if err := self.config.Repos[i].Sync(); err != nil {
-					return err
-				}
-				found = true
-				break
+		if r := self.config.GetRepoByName(repoName); r != nil {
+			if err := r.Sync(); err != nil {
+				return err
 			}
-		}
-
-		if !found {
+		} else {
 			fmt.Println("  No configured repository", repoName, "found.")
 		}
 	} else {
@@ -89,21 +81,12 @@ func (self *App) Clean(repoName string) (err error) {
 
 	fmt.Println("Clean cache repositories:")
 
-	var found bool
-
 	if repoName != "" {
-		for i := range self.config.Repos {
-			if self.config.Repos[i].Name == repoName {
-				if err := self.config.Repos[i].Clean(); err != nil {
-					return err
-				}
-				found = true
-				break
-
+		if r := self.config.GetRepoByName(repoName); r != nil {
+			if err := r.Clean(); err != nil {
+				return err
 			}
-		}
-
-		if !found {
+		} else {
 			fmt.Println("  No configured repository", repoName, "found.")
 		}
 	} else {
