@@ -169,16 +169,11 @@ func (self *Repomd) Metadata() error {
 	return nil
 }
 
+// Remove the cache directory and content for the repository.
 func (self *Repomd) Clean() error {
 
-	if err := os.Remove(self.localRepoCacheFile); err != nil {
+	if err := os.RemoveAll(self.CacheDir); err != nil {
 		return err
-	}
-
-	for _, d := range self.Data {
-		if err := self.removeRepomdFile("/" + d.Location.Path); err != nil {
-			return err
-		}
 	}
 
 	return nil
