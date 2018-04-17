@@ -55,3 +55,14 @@ func (self *ConfigData) Print() {
 		fmt.Println("*", r.Name, r.CacheDir)
 	}
 }
+
+// Return a matching repository or nil if not found.
+func (self *ConfigData) GetRepoByName(name string) *repository.Repository {
+	for _, r := range self.Repos {
+		if r.Name == name {
+			return &r
+		}
+	}
+
+	return nil
+}
