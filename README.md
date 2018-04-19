@@ -48,6 +48,7 @@ Flags:
       --help                     Show context-sensitive help (also try --help-long and --help-man).
       --version                  Show application version.
   -c, --config="/etc/rsst.yaml"  Path to alternate YAML configuration file.
+  -v, --verbose                  Turn on verbose output. Default is verbose turned off.
 
 Commands:
   help [<command>...]
@@ -65,4 +66,3 @@ Commands:
   clean [<repo name>]
     Cleanup repository cache.
 ```
-
