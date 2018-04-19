@@ -1,14 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"github.com/catay/rrst/cmd"
-	"log"
+	"os"
 )
 
 func main() {
 	c := cmd.New()
 
 	if err := c.Run(); err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "%s\n", err)
 	}
 }
