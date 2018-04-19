@@ -16,6 +16,7 @@ const (
 type cli struct {
 	app          *kingpin.Application
 	configFile   *string
+	verbose      *bool
 	listCmd      *kingpin.CmdClause
 	syncCmd      *kingpin.CmdClause
 	showCmd      *kingpin.CmdClause
@@ -30,6 +31,7 @@ func New() *cli {
 	c.app.Version(version)
 	c.app.Author(author)
 	c.configFile = c.app.Flag("config", "Path to alternate YAML configuration file.").Short('c').Default(defaultConfig).String()
+	c.verbose = c.app.Flag("verbose", "Turn on verbose output. Default is verbose turned off.").Short('v').Bool()
 	c.listCmd = c.app.Command("list", "List repository names and description.")
 	c.syncCmd = c.app.Command("sync", "Synchronize remote to local repository sets.")
 	c.syncArgRepo = c.syncCmd.Arg("repo name", "Repository name.").String()
