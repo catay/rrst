@@ -44,6 +44,7 @@ type RpmPackage struct {
 	Arch       string      `xml:"arch"`
 	Loc        rpmLocation `xml:"location"`
 	ToDownload bool
+	LocalPath  string
 }
 
 type rpmLocation struct {

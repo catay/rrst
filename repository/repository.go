@@ -208,6 +208,10 @@ func (self *Repository) markPackagesForDownload() error {
 			localPackages = append(localPackages, path)
 		}
 
+		if info.Mode().IsRegular() && strings.HasSuffix(path, "filepart") {
+			localPackages = append(localPackages, path)
+		}
+
 		return nil
 	})
 
@@ -234,13 +238,15 @@ func (self *Repository) markPackagesForDownload() error {
 					//	self.metadata.Packages()[i].ToDownload = false
 				}
 
+				// store the local path in case the package was not complelty downloaded
+				if strings.HasSuffix(strings.TrimSuffix(lp, ".filepart"), p.Loc.Path) {
+					self.metadata.PrimaryData.Package[i].LocalPath = strings.TrimSuffix(lp, p.Loc.Path+".filepart")
+				}
 			}
-
 		}
 	}
 
 	return nil
-
 }
 
 func (self *Repository) packageExistsLocal(p repomd.RpmPackage) (bool, error) {
@@ -264,24 +270,33 @@ func (self *Repository) downloadPackage(p repomd.RpmPackage) error {
 
 	rpmDir := self.topLevelDir + "/" + filepath.Dir(p.Loc.Path)
 	remoteRpmPath := self.RemoteURI + "/" + p.Loc.Path + "?" + self.secret
-	localRpmPath := self.topLevelDir + "/" + p.Loc.Path
+	localRpmPath := self.topLevelDir + "/" + p.Loc.Path + ".filepart"
+
+	if p.LocalPath != "" {
+		localRpmPath = p.LocalPath + "/" + p.Loc.Path + ".filepart"
+	}
 
 	// create dir
 	if err := os.MkdirAll(rpmDir, 0755); err != nil {
 		return err
 	}
 
-	// create file
-
-	f, err := os.Create(localRpmPath)
-	defer f.Close()
+	// create a new file if it doesn't exist, if file exists open in append mode
+	f, err := os.OpenFile(localRpmPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 	if err != nil {
 		return err
 	}
 
-	// download
+	// get current file size
+	stat, err := f.Stat()
+	if err != nil {
+		return err
+	}
 
+	initialFileSize := stat.Size()
+
+	// download the file
 	client := &http.Client{}
 
 	resp, err := client.Get(remoteRpmPath)
@@ -303,12 +318,24 @@ func (self *Repository) downloadPackage(p repomd.RpmPackage) error {
 		n, err := resp.Body.Read(buf[:cap(buf)])
 		buf = buf[:n]
 		nbytes += int64(n)
-		f.Write(buf)
+
+		// only start appending when buffer is greater than initial file size
+		if nbytes > initialFileSize {
+			f.Write(buf)
+		}
 
 		if err == io.EOF {
 			fmt.Println("done")
 			break
 		}
+	}
+
+	resp.Body.Close()
+	f.Close()
+
+	// rename the file by removing the filepart suffix
+	if err := os.Rename(localRpmPath, strings.TrimSuffix(localRpmPath, ".filepart")); err != nil {
+		return err
 	}
 
 	return nil
