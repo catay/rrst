@@ -15,6 +15,10 @@ import (
 	"time"
 )
 
+const (
+	tmpSuffix = ".filepart"
+)
+
 type Repository struct {
 	Name            string   `yaml:"name"`
 	RType           string   `yaml:"type"`
@@ -208,7 +212,7 @@ func (self *Repository) markPackagesForDownload() error {
 			localPackages = append(localPackages, path)
 		}
 
-		if info.Mode().IsRegular() && strings.HasSuffix(path, "filepart") {
+		if info.Mode().IsRegular() && strings.HasSuffix(path, tmpSuffix) {
 			localPackages = append(localPackages, path)
 		}
 
@@ -239,8 +243,8 @@ func (self *Repository) markPackagesForDownload() error {
 				}
 
 				// store the local path in case the package was not complelty downloaded
-				if strings.HasSuffix(strings.TrimSuffix(lp, ".filepart"), p.Loc.Path) {
-					self.metadata.PrimaryData.Package[i].LocalPath = strings.TrimSuffix(lp, p.Loc.Path+".filepart")
+				if strings.HasSuffix(strings.TrimSuffix(lp, tmpSuffix), p.Loc.Path) {
+					self.metadata.PrimaryData.Package[i].LocalPath = strings.TrimSuffix(lp, p.Loc.Path+tmpSuffix)
 				}
 			}
 		}
@@ -270,10 +274,10 @@ func (self *Repository) downloadPackage(p repomd.RpmPackage) error {
 
 	rpmDir := self.topLevelDir + "/" + filepath.Dir(p.Loc.Path)
 	remoteRpmPath := self.RemoteURI + "/" + p.Loc.Path + "?" + self.secret
-	localRpmPath := self.topLevelDir + "/" + p.Loc.Path + ".filepart"
+	localRpmPath := self.topLevelDir + "/" + p.Loc.Path + tmpSuffix
 
 	if p.LocalPath != "" {
-		localRpmPath = p.LocalPath + "/" + p.Loc.Path + ".filepart"
+		localRpmPath = p.LocalPath + "/" + p.Loc.Path + tmpSuffix
 	}
 
 	// create dir
@@ -334,7 +338,7 @@ func (self *Repository) downloadPackage(p repomd.RpmPackage) error {
 	f.Close()
 
 	// rename the file by removing the filepart suffix
-	if err := os.Rename(localRpmPath, strings.TrimSuffix(localRpmPath, ".filepart")); err != nil {
+	if err := os.Rename(localRpmPath, strings.TrimSuffix(localRpmPath, tmpSuffix)); err != nil {
 		return err
 	}
 
