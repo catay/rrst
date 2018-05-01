@@ -15,6 +15,7 @@ type ConfigData struct {
 
 type globals struct {
 	CacheDir string `yaml:"cache_dir"`
+	ProxyURL string `yaml:"proxy_url"`
 }
 
 func NewConfig(configFile string) (c *ConfigData, err error) {
