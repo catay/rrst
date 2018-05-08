@@ -2,9 +2,8 @@ package suse
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/catay/rrst/util"
+	h "github.com/catay/rrst/util/http"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -53,7 +52,6 @@ func (self *SCCApi) FetchProductsJson() error {
 		return nil
 	}
 
-	client := &http.Client{}
 	req, err := http.NewRequest("GET", self.apiURI, nil)
 	if err != nil {
 		return err
@@ -62,15 +60,11 @@ func (self *SCCApi) FetchProductsJson() error {
 	// set SCC registration code as a header for authentication
 	req.Header.Add("Authorization", "Token token="+self.regCode)
 
-	resp, err := client.Do(req)
+	resp, err := h.HttpProxyGet(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("HTTP error %v ", resp.StatusCode))
-	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

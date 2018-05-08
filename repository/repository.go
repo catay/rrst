@@ -6,6 +6,7 @@ import (
 	"github.com/catay/rrst/api/suse"
 	"github.com/catay/rrst/repomd"
 	"github.com/catay/rrst/util/file"
+	h "github.com/catay/rrst/util/http"
 	"io"
 	"net/http"
 	"os"
@@ -301,16 +302,14 @@ func (self *Repository) downloadPackage(p repomd.RpmPackage) error {
 	initialFileSize := stat.Size()
 
 	// download the file
-	client := &http.Client{}
-
-	resp, err := client.Get(remoteRpmPath)
-
+	req, err := http.NewRequest("GET", remoteRpmPath, nil)
 	if err != nil {
 		return err
 	}
 
-	if resp.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("HTTP error %v ", resp.StatusCode))
+	resp, err := h.HttpProxyGet(req)
+	if err != nil {
+		return err
 	}
 
 	fmt.Printf("    >> %-70s ... ", p.Loc.Path)

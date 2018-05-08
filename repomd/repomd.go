@@ -3,8 +3,8 @@ package repomd
 import (
 	"compress/gzip"
 	"encoding/xml"
-	"errors"
 	"fmt"
+	h "github.com/catay/rrst/util/http"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -94,15 +94,17 @@ func (self *Repomd) loadFromLocalRepoCache() error {
 // if present.
 func (self *Repomd) loadFromRemoteRepoCache() ([]byte, error) {
 
-	resp, err := http.Get(self.remoteRepoCacheFile + "?" + self.Secret)
+	req, err := http.NewRequest("GET", self.remoteRepoCacheFile+"?"+self.Secret, nil)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("HTTP error %v ", resp.StatusCode))
+	resp, err := h.HttpProxyGet(req)
+	if err != nil {
+		return nil, err
 	}
+
+	defer resp.Body.Close()
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -240,15 +242,16 @@ func (self *Repomd) refreshRepomd() (bool, error) {
 
 func (self *Repomd) fetchRepomdFile(fileLocation string) error {
 
-	resp, err := http.Get(self.Url + fileLocation + "?" + self.Secret)
+	req, err := http.NewRequest("GET", self.Url+fileLocation+"?"+self.Secret, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := h.HttpProxyGet(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("HTTP error %v ", resp.StatusCode))
-	}
 
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
