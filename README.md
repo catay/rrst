@@ -15,6 +15,7 @@ This is a first prototype and still lacks some basic features and functionality.
  * support for SUSE SCC repo's which require a **special** form of authentication
  * support download resume for partially downloaded packages
  * environment variable support for storing the secret SCC registration code
+ * HTTP(s) proxy support
  * staged or merged repo support
  * include only selective package patterns for download (no dependency tracking)
  * caches the repomd metadata
