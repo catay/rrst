@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"github.com/catay/rrst/config"
+	"os"
 )
 
 const (
@@ -19,6 +20,9 @@ func NewApp(configFile string) (a *App, err error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// set proxy
+	a.setProxy()
 
 	// initialize default config variables
 	a.setCacheDir()
@@ -109,4 +113,13 @@ func (self *App) setCacheDir() {
 	if self.config.Globals.CacheDir == "" {
 		self.config.Globals.CacheDir = cacheDir
 	}
+}
+
+func (self *App) setProxy() (err error) {
+	if self.config.Globals.ProxyURL != "" {
+		if err := os.Setenv("http_proxy", self.config.Globals.ProxyURL); err != nil {
+			return err
+		}
+	}
+	return nil
 }
