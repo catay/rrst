@@ -1,3 +1,4 @@
+[![CircleCI](https://circleci.com/gh/catay/rrst.svg?style=svg)](https://circleci.com/gh/catay/rrst)
 [![Go Report Card](https://goreportcard.com/badge/github.com/catay/rrst)](https://goreportcard.com/report/github.com/catay/rrst)
 
 # Remote Repository Sync Tool (rrst)
