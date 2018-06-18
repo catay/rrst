@@ -1,6 +1,5 @@
 globals:
   cache_dir: /var/tmp/rrst/cache
-  proxy_url: https://proxy.example.com:8080
 repositories:
   - name: SLES-12-3-X86_64-updates
     type: rpmmd
