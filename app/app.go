@@ -69,7 +69,7 @@ func (self *App) Sync(repoName string) (err error) {
 		if len(self.config.Repos) > 0 {
 			for i := range self.config.Repos {
 				if err := self.config.Repos[i].Sync(); err != nil {
-					return err
+					fmt.Println("    ", err)
 				}
 			}
 
