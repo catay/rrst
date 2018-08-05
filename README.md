@@ -71,3 +71,52 @@ Commands:
   clean [<repo name>]
     Cleanup repository cache.
 ```
+
+## Build
+
+The binary can be easily build inside a Docker container if Go is not installed on the local system.  
+Note that the binary will only work on recent x86_64 Linux architectures.
+
+Clone the source code from GitHub.
+
+```bash
+$ git clone git@github.com:catay/rrst.git && cd rrst
+```
+Build the image from the Dockerfile.
+
+```bash
+$ docker build -t rrst .
+```
+
+Spin up the container based on the image previously created.
+
+```bash
+docker run rrst rrst --version
+```
+
+Copy the binary from the container to the local filesystem path `/var/tmp/rrst`.  
+There are better ways on how to do this, but this will avoid any SELinux hassle with shared volumes.
+
+Replace in the below snippets `<CONTAINER ID>` with the id provided in `docker container ls -a`.
+
+```bash
+$ docker cp <CONTAINER ID>:/go/src/app/rrst /var/tmp/rrst
+```
+
+Remove the container.
+
+```bash
+$ docker rm <CONTAINER ID>
+```
+
+Test if the binary works on your local system.
+
+```bash
+$ /var/tmp/rrst -c examples/config.yaml list
+Configured repositories:
+   SLES-12-3-X86_64-updates
+   SLES-11-4-X86_64-updates
+   RHEL-7-4-X86_64-os
+   SLES-12-3-X86_64-opensuse
+```
+
