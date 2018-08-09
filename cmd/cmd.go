@@ -7,8 +7,10 @@ import (
 	"os"
 )
 
+// the version string will be injected during the build.
+var Version = "0.0.0"
+
 const (
-	version       = "0.1.0"
 	author        = "Steven Mertens <steven.mertens@catay.be>"
 	defaultConfig = "/etc/rsst.yaml"
 )
@@ -28,7 +30,7 @@ type cli struct {
 func New() *cli {
 	c := new(cli)
 	c.app = kingpin.New("rsst", "Remote Repository Sync Tool")
-	c.app.Version(version)
+	c.app.Version(Version)
 	c.app.Author(author)
 	c.configFile = c.app.Flag("config", "Path to alternate YAML configuration file.").Short('c').Default(defaultConfig).String()
 	c.verbose = c.app.Flag("verbose", "Turn on verbose output. Default is verbose turned off.").Short('v').Bool()
