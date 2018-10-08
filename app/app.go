@@ -26,6 +26,9 @@ func NewApp(configFile string) (a *App, err error) {
 
 	// initialize default config variables
 	a.setCacheDir()
+	if err := a.mkCacheDir(); err != nil {
+		return nil, err
+	}
 
 	return
 }
@@ -113,6 +116,10 @@ func (self *App) setCacheDir() {
 	if self.config.Globals.CacheDir == "" {
 		self.config.Globals.CacheDir = cacheDir
 	}
+}
+
+func (self *App) mkCacheDir() (err error) {
+	return os.MkdirAll(self.config.Globals.CacheDir, 0755)
 }
 
 func (self *App) setProxy() (err error) {
