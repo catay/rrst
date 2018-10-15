@@ -22,12 +22,12 @@ repositories:
     update_suffix: timestamp|epoch
     include_patterns: 
       - '.*bash.*'
-  - name: RHEL-7-4-X86_64-os
+  - name: CENTOS-7-5-X86_64-os
     type: rpmmd
     vendor: redhat
     reg_code: '' 
-    remote_uri: http://mirror.centos.org/centos/7.4.1708/os/x86_64
-    local_uri: /var/tmp/packages/RHEL/7/4/x86_64/os
+    remote_uri: http://mirror.centos.org/centos/7.5.1804/os/x86_64/
+    local_uri: /var/tmp/packages/CENTOS/7/5/x86_64/os
     update_policy: stage
     update_suffix: timestamp|epoch
     include_patterns:
