@@ -1,7 +1,6 @@
 package http
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 )
@@ -26,7 +25,7 @@ func HttpProxyGet(req *http.Request) (resp *http.Response, err error) {
 
 	if resp.StatusCode != 200 {
 		resp.Body.Close()
-		return nil, errors.New(fmt.Sprintf("HTTP error %v ", resp.StatusCode))
+		return nil, fmt.Errorf("HTTP error %v ", resp.StatusCode)
 	}
 
 	return resp, err

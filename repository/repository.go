@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"errors"
 	"fmt"
 	"github.com/catay/rrst/api/suse"
 	"github.com/catay/rrst/repomd"
@@ -91,7 +90,7 @@ func (r *Repository) Sync() error {
 
 		regCode, ok := r.GetRegCode()
 		if !ok {
-			return errors.New(fmt.Sprintf("Environment variable %v not set", r.RegCode))
+			return fmt.Errorf("Environment variable %v not set", r.RegCode)
 		}
 
 		scc := suse.NewSCCApi(regCode, r.CacheDir)
@@ -103,7 +102,7 @@ func (r *Repository) Sync() error {
 
 		r.secret, ok = scc.GetSecretURI(r.RemoteURI)
 		if !ok {
-			return errors.New(fmt.Sprintf("Secret for url  %v not found", r.RemoteURI))
+			return fmt.Errorf("Secret for url  %v not found", r.RemoteURI)
 		}
 	}
 
