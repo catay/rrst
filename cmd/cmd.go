@@ -44,16 +44,16 @@ func New() *cli {
 	return c
 }
 
-func (self *cli) Run() (err error) {
-	args := kingpin.MustParse(self.app.Parse(os.Args[1:]))
-	r, err := app.NewApp(*self.configFile)
+func (c *cli) Run() (err error) {
+	args := kingpin.MustParse(c.app.Parse(os.Args[1:]))
+	r, err := app.NewApp(*c.configFile)
 	if err != nil {
 		return err
 	}
 
 	switch args {
 	case "sync":
-		if err := r.Sync(*self.syncArgRepo); err != nil {
+		if err := r.Sync(*c.syncArgRepo); err != nil {
 			return err
 		}
 	case "show":
@@ -62,7 +62,7 @@ func (self *cli) Run() (err error) {
 	case "list":
 		r.List()
 	case "clean":
-		if err := r.Clean(*self.cleanArgRepo); err != nil {
+		if err := r.Clean(*c.cleanArgRepo); err != nil {
 			return err
 		}
 	}

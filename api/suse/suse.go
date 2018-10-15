@@ -33,32 +33,32 @@ type Repository struct {
 	Enabled bool   `json:"enabled"`
 }
 
-func NewSCCApi(regCode string, cacheDir string) (self *SCCApi) {
-	api := &SCCApi{}
-	api.apiURI = "https://scc.suse.com/connect/subscriptions/products.json"
-	api.regCode = regCode
-	api.cacheDir = cacheDir
-	api.cacheFile = api.cacheDir + "/" + util.Sha256Sum(api.regCode)
-	api.cacheRefreshDuration = 86400
-	return api
+func NewSCCApi(regCode string, cacheDir string) (s *SCCApi) {
+	s = &SCCApi{}
+	s.apiURI = "https://scc.suse.com/connect/subscriptions/products.json"
+	s.regCode = regCode
+	s.cacheDir = cacheDir
+	s.cacheFile = s.cacheDir + "/" + util.Sha256Sum(s.regCode)
+	s.cacheRefreshDuration = 86400
+	return s
 }
 
 // public
 
-//func (self *SCCApi) FetchProductsJson(force bool) {
-func (self *SCCApi) FetchProductsJson() error {
+//func (s *SCCApi) FetchProductsJson(force bool) {
+func (s *SCCApi) FetchProductsJson() error {
 
-	if !self.isCacheExpired() {
+	if !s.isCacheExpired() {
 		return nil
 	}
 
-	req, err := http.NewRequest("GET", self.apiURI, nil)
+	req, err := http.NewRequest("GET", s.apiURI, nil)
 	if err != nil {
 		return err
 	}
 
 	// set SCC registration code as a header for authentication
-	req.Header.Add("Authorization", "Token token="+self.regCode)
+	req.Header.Add("Authorization", "Token token="+s.regCode)
 
 	resp, err := h.HttpProxyGet(req)
 	if err != nil {
@@ -71,21 +71,21 @@ func (self *SCCApi) FetchProductsJson() error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(self.cacheFile, body, 0600); err != nil {
+	if err := ioutil.WriteFile(s.cacheFile, body, 0600); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (self *SCCApi) GetSecretURI(url string) (string, bool) {
-	return self.getRepoSecret(self.getProducts(), url)
+func (s *SCCApi) GetSecretURI(url string) (string, bool) {
+	return s.getRepoSecret(s.getProducts(), url)
 }
 
 // private
 
-func (self *SCCApi) isCacheExpired() bool {
-	f, err := os.Open(self.cacheFile)
+func (s *SCCApi) isCacheExpired() bool {
+	f, err := os.Open(s.cacheFile)
 	defer f.Close()
 
 	if err != nil {
@@ -96,7 +96,7 @@ func (self *SCCApi) isCacheExpired() bool {
 			return true
 		}
 
-		if time.Since(fi.ModTime()).Seconds() > float64(self.cacheRefreshDuration) {
+		if time.Since(fi.ModTime()).Seconds() > float64(s.cacheRefreshDuration) {
 			return true
 		}
 	}
@@ -104,10 +104,10 @@ func (self *SCCApi) isCacheExpired() bool {
 	return false
 }
 
-func (self *SCCApi) getProducts() []Product {
+func (s *SCCApi) getProducts() []Product {
 	var p []Product
 
-	data, err := ioutil.ReadFile(self.cacheFile)
+	data, err := ioutil.ReadFile(s.cacheFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -119,7 +119,7 @@ func (self *SCCApi) getProducts() []Product {
 	return p
 }
 
-func (self *SCCApi) getRepoSecret(p []Product, url string) (string, bool) {
+func (s *SCCApi) getRepoSecret(p []Product, url string) (string, bool) {
 
 	var secret string
 	var ok bool
@@ -133,7 +133,7 @@ func (self *SCCApi) getRepoSecret(p []Product, url string) (string, bool) {
 			}
 		}
 		if !ok {
-			secret, ok = self.getRepoSecret(v.Extensions, url)
+			secret, ok = s.getRepoSecret(v.Extensions, url)
 		}
 	}
 

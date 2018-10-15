@@ -42,24 +42,24 @@ func NewConfig(configFile string) (c *ConfigData, err error) {
 	return c, err
 }
 
-func (self *ConfigData) SetReposDefaults() {
-	for i, r := range self.Repos {
+func (c *ConfigData) SetReposDefaults() {
+	for i, r := range c.Repos {
 		if r.CacheDir == "" {
-			//r.CacheDir = self.Globals.CacheDir
-			self.Repos[i].CacheDir = self.Globals.CacheDir
+			//r.CacheDir = c.Globals.CacheDir
+			c.Repos[i].CacheDir = c.Globals.CacheDir
 		}
 	}
 }
 
-func (self *ConfigData) Print() {
-	for _, r := range self.Repos {
+func (c *ConfigData) Print() {
+	for _, r := range c.Repos {
 		fmt.Println("*", r.Name, r.CacheDir)
 	}
 }
 
 // Return a matching repository or nil if not found.
-func (self *ConfigData) GetRepoByName(name string) *repository.Repository {
-	for _, r := range self.Repos {
+func (c *ConfigData) GetRepoByName(name string) *repository.Repository {
+	for _, r := range c.Repos {
 		if r.Name == name {
 			return &r
 		}

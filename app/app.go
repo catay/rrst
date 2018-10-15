@@ -33,12 +33,12 @@ func NewApp(configFile string) (a *App, err error) {
 	return
 }
 
-func (self *App) List() {
+func (a *App) List() {
 
 	fmt.Println("Configured repositories:")
 
-	if len(self.config.Repos) > 0 {
-		for _, r := range self.config.Repos {
+	if len(a.config.Repos) > 0 {
+		for _, r := range a.config.Repos {
 			fmt.Println("  ", r.Name)
 		}
 	} else {
@@ -46,22 +46,22 @@ func (self *App) List() {
 	}
 }
 
-func (self *App) Show() {
+func (a *App) Show() {
 
-	fmt.Println("cache_dir:", self.config.Globals.CacheDir)
+	fmt.Println("cache_dir:", a.config.Globals.CacheDir)
 
-	for _, r := range self.config.Repos {
+	for _, r := range a.config.Repos {
 		fmt.Println("*", r.Name)
 		fmt.Println(" -", r.CacheDir)
 	}
 }
 
-func (self *App) Sync(repoName string) (err error) {
+func (a *App) Sync(repoName string) (err error) {
 
 	fmt.Println("Sync repositories:")
 
 	if repoName != "" {
-		if r := self.config.GetRepoByName(repoName); r != nil {
+		if r := a.config.GetRepoByName(repoName); r != nil {
 			if err := r.Sync(); err != nil {
 				return err
 			}
@@ -69,9 +69,9 @@ func (self *App) Sync(repoName string) (err error) {
 			fmt.Println("  No configured repository", repoName, "found.")
 		}
 	} else {
-		if len(self.config.Repos) > 0 {
-			for i := range self.config.Repos {
-				if err := self.config.Repos[i].Sync(); err != nil {
+		if len(a.config.Repos) > 0 {
+			for i := range a.config.Repos {
+				if err := a.config.Repos[i].Sync(); err != nil {
 					fmt.Println("    ", err)
 				}
 			}
@@ -84,12 +84,12 @@ func (self *App) Sync(repoName string) (err error) {
 	return nil
 }
 
-func (self *App) Clean(repoName string) (err error) {
+func (a *App) Clean(repoName string) (err error) {
 
 	fmt.Println("Clean cache repositories:")
 
 	if repoName != "" {
-		if r := self.config.GetRepoByName(repoName); r != nil {
+		if r := a.config.GetRepoByName(repoName); r != nil {
 			if err := r.Clean(); err != nil {
 				return err
 			}
@@ -97,9 +97,9 @@ func (self *App) Clean(repoName string) (err error) {
 			fmt.Println("  No configured repository", repoName, "found.")
 		}
 	} else {
-		if len(self.config.Repos) > 0 {
-			for i := range self.config.Repos {
-				if err := self.config.Repos[i].Clean(); err != nil {
+		if len(a.config.Repos) > 0 {
+			for i := range a.config.Repos {
+				if err := a.config.Repos[i].Clean(); err != nil {
 					return err
 				}
 			}
@@ -112,19 +112,19 @@ func (self *App) Clean(repoName string) (err error) {
 	return nil
 }
 
-func (self *App) setCacheDir() {
-	if self.config.Globals.CacheDir == "" {
-		self.config.Globals.CacheDir = cacheDir
+func (a *App) setCacheDir() {
+	if a.config.Globals.CacheDir == "" {
+		a.config.Globals.CacheDir = cacheDir
 	}
 }
 
-func (self *App) mkCacheDir() (err error) {
-	return os.MkdirAll(self.config.Globals.CacheDir, 0755)
+func (a *App) mkCacheDir() (err error) {
+	return os.MkdirAll(a.config.Globals.CacheDir, 0755)
 }
 
-func (self *App) setProxy() (err error) {
-	if self.config.Globals.ProxyURL != "" {
-		if err := os.Setenv("http_proxy", self.config.Globals.ProxyURL); err != nil {
+func (a *App) setProxy() (err error) {
+	if a.config.Globals.ProxyURL != "" {
+		if err := os.Setenv("http_proxy", a.config.Globals.ProxyURL); err != nil {
 			return err
 		}
 	}

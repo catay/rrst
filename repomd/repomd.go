@@ -77,13 +77,13 @@ func NewRepoMd(url, secret string, cacheDir string) (*Repomd, error) {
 
 // Load the struct variables with data from the locally cached
 // repomd XML file if present.
-func (self *Repomd) loadFromLocalRepoCache() error {
-	data, err := ioutil.ReadFile(self.localRepoCacheFile)
+func (r *Repomd) loadFromLocalRepoCache() error {
+	data, err := ioutil.ReadFile(r.localRepoCacheFile)
 	if err != nil {
 		return err
 	}
 
-	if err := xml.Unmarshal(data, self); err != nil {
+	if err := xml.Unmarshal(data, r); err != nil {
 		return err
 	}
 
@@ -92,9 +92,9 @@ func (self *Repomd) loadFromLocalRepoCache() error {
 
 // Load the struct variables with data from the remote repomd XML file
 // if present.
-func (self *Repomd) loadFromRemoteRepoCache() ([]byte, error) {
+func (r *Repomd) loadFromRemoteRepoCache() ([]byte, error) {
 
-	req, err := http.NewRequest("GET", self.remoteRepoCacheFile+"?"+self.Secret, nil)
+	req, err := http.NewRequest("GET", r.remoteRepoCacheFile+"?"+r.Secret, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (self *Repomd) loadFromRemoteRepoCache() ([]byte, error) {
 		return nil, err
 	}
 
-	if err := xml.Unmarshal(data, self); err != nil {
+	if err := xml.Unmarshal(data, r); err != nil {
 		return nil, err
 	}
 
@@ -120,10 +120,10 @@ func (self *Repomd) loadFromRemoteRepoCache() ([]byte, error) {
 
 // Create the cache directory if it doesn't exist.
 // If it exists, do nothing.
-func (self *Repomd) createCacheDir() error {
-	_, err := os.Stat(self.CacheDir)
+func (r *Repomd) createCacheDir() error {
+	_, err := os.Stat(r.CacheDir)
 	if os.IsNotExist(err) {
-		if err := os.Mkdir(self.CacheDir, 0700); err != nil {
+		if err := os.Mkdir(r.CacheDir, 0700); err != nil {
 			return err
 		}
 	}
@@ -133,8 +133,8 @@ func (self *Repomd) createCacheDir() error {
 
 // Compare the revision of two repomd objets.
 // Return true if the receiver has an outdated revision.
-func (self *Repomd) hasOutdatedRevision(r *Repomd) bool {
-	if self.Revision < r.Revision {
+func (r *Repomd) hasOutdatedRevision(rm *Repomd) bool {
+	if r.Revision < rm.Revision {
 		return true
 	}
 
@@ -143,29 +143,29 @@ func (self *Repomd) hasOutdatedRevision(r *Repomd) bool {
 
 // old methods
 
-func (self *Repomd) Debug() {
-	fmt.Printf("Url: %v\n", self.Url)
-	fmt.Printf("Secret: %v\n", self.Secret)
+func (r *Repomd) Debug() {
+	fmt.Printf("Url: %v\n", r.Url)
+	fmt.Printf("Secret: %v\n", r.Secret)
 }
 
-func (self *Repomd) Metadata() error {
+func (r *Repomd) Metadata() error {
 
-	ok, err := self.refreshRepomd()
+	ok, err := r.refreshRepomd()
 
 	if err != nil {
 		return err
 	}
 
 	if ok {
-		for _, d := range self.Data {
-			if err := self.fetchRepomdFile("/" + d.Location.Path); err != nil {
+		for _, d := range r.Data {
+			if err := r.fetchRepomdFile("/" + d.Location.Path); err != nil {
 				return err
 			}
 		}
 
 	}
 
-	if err := self.unmarchalPrimaryData(); err != nil {
+	if err := r.unmarchalPrimaryData(); err != nil {
 		return err
 	}
 
@@ -173,9 +173,9 @@ func (self *Repomd) Metadata() error {
 }
 
 // Remove the cache directory and content for the repository.
-func (self *Repomd) Clean() error {
+func (r *Repomd) Clean() error {
 
-	if err := os.RemoveAll(self.CacheDir); err != nil {
+	if err := os.RemoveAll(r.CacheDir); err != nil {
 		return err
 	}
 
@@ -192,16 +192,16 @@ func (self *Repomd) Clean() error {
 // if not exists
 //    store to disk and fetch other data files
 
-func (self *Repomd) refreshRepomd() (bool, error) {
+func (r *Repomd) refreshRepomd() (bool, error) {
 
 	ok := false
 
 	t := &Repomd{
-		Url:                 self.Url,
-		Secret:              self.Secret,
-		CacheDir:            self.CacheDir,
-		localRepoCacheFile:  self.CacheDir + "/repomd.xml",
-		remoteRepoCacheFile: self.Url + "/repodata/repomd.xml",
+		Url:                 r.Url,
+		Secret:              r.Secret,
+		CacheDir:            r.CacheDir,
+		localRepoCacheFile:  r.CacheDir + "/repomd.xml",
+		remoteRepoCacheFile: r.Url + "/repodata/repomd.xml",
 	}
 
 	content, err := t.loadFromRemoteRepoCache()
@@ -210,29 +210,29 @@ func (self *Repomd) refreshRepomd() (bool, error) {
 	}
 
 	// load local cache if present
-	if err := self.loadFromLocalRepoCache(); err != nil {
+	if err := r.loadFromLocalRepoCache(); err != nil {
 		if !os.IsNotExist(err) {
 			return ok, err
 		}
 	}
 
-	if self.hasOutdatedRevision(t) {
+	if r.hasOutdatedRevision(t) {
 		ok = true
 		fmt.Println("Refresh repomd cache ...")
 		// clean current cache if present
-		if err := self.Clean(); err != nil {
+		if err := r.Clean(); err != nil {
 			if !os.IsNotExist(err) {
 				return ok, err
 			}
 		}
 
-		*self = *t
+		*r = *t
 
-		if err := self.createCacheDir(); err != nil {
+		if err := r.createCacheDir(); err != nil {
 			return ok, err
 		}
 
-		if err := ioutil.WriteFile(self.localRepoCacheFile, content, 0600); err != nil {
+		if err := ioutil.WriteFile(r.localRepoCacheFile, content, 0600); err != nil {
 			return ok, err
 		}
 	}
@@ -240,9 +240,9 @@ func (self *Repomd) refreshRepomd() (bool, error) {
 	return ok, nil
 }
 
-func (self *Repomd) fetchRepomdFile(fileLocation string) error {
+func (r *Repomd) fetchRepomdFile(fileLocation string) error {
 
-	req, err := http.NewRequest("GET", self.Url+fileLocation+"?"+self.Secret, nil)
+	req, err := http.NewRequest("GET", r.Url+fileLocation+"?"+r.Secret, nil)
 	if err != nil {
 		return err
 	}
@@ -259,13 +259,13 @@ func (self *Repomd) fetchRepomdFile(fileLocation string) error {
 	}
 
 	// check if dir exists, if not create it
-	if _, err := os.Stat(self.CacheDir); os.IsNotExist(err) {
-		if err := os.Mkdir(self.CacheDir, 0700); err != nil {
+	if _, err := os.Stat(r.CacheDir); os.IsNotExist(err) {
+		if err := os.Mkdir(r.CacheDir, 0700); err != nil {
 			return err
 		}
 	}
 
-	if err := ioutil.WriteFile(self.CacheDir+"/"+path.Base(fileLocation), content, 0600); err != nil {
+	if err := ioutil.WriteFile(r.CacheDir+"/"+path.Base(fileLocation), content, 0600); err != nil {
 		return err
 	}
 
@@ -273,20 +273,20 @@ func (self *Repomd) fetchRepomdFile(fileLocation string) error {
 
 }
 
-func (self *Repomd) removeRepomdFile(fileLocation string) error {
-	if err := os.Remove(self.CacheDir + "/" + path.Base(fileLocation)); err != nil {
+func (r *Repomd) removeRepomdFile(fileLocation string) error {
+	if err := os.Remove(r.CacheDir + "/" + path.Base(fileLocation)); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (self *Repomd) unmarchalPrimaryData() error {
+func (r *Repomd) unmarchalPrimaryData() error {
 	var primaryCache string
 
-	for _, d := range self.Data {
+	for _, d := range r.Data {
 		if d.Type == "primary" {
-			primaryCache = self.CacheDir + "/" + path.Base(d.Location.Path)
+			primaryCache = r.CacheDir + "/" + path.Base(d.Location.Path)
 		}
 	}
 
@@ -295,27 +295,27 @@ func (self *Repomd) unmarchalPrimaryData() error {
 		return err
 	}
 
-	r, err := gzip.NewReader(f)
+	pc, err := gzip.NewReader(f)
 	if err != nil {
 		return err
 	}
 
-	data, err := ioutil.ReadAll(r)
+	data, err := ioutil.ReadAll(pc)
 	if err != nil {
 		return err
 	}
 
-	if err := xml.Unmarshal(data, &self.PrimaryData); err != nil {
+	if err := xml.Unmarshal(data, &r.PrimaryData); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (self *Repomd) Packages() []RpmPackage {
-	return self.PrimaryData.Package
+func (r *Repomd) Packages() []RpmPackage {
+	return r.PrimaryData.Package
 }
 
-func (self *Repomd) PackageCount() string {
-	return self.PrimaryData.Packages
+func (r *Repomd) PackageCount() string {
+	return r.PrimaryData.Packages
 }

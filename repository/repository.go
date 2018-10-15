@@ -44,34 +44,34 @@ func NewRepository(name string) (r *Repository) {
 	return
 }
 
-func (self *Repository) GetUpdatePolicy() string {
+func (r *Repository) GetUpdatePolicy() string {
 	// return the policy string and set default to merge
-	switch self.UpdatePolicy {
+	switch r.UpdatePolicy {
 	case "stage":
-		return self.UpdatePolicy
+		return r.UpdatePolicy
 	default:
 		return "merge"
 	}
 }
 
-func (self *Repository) GetRegCode() (string, bool) {
+func (r *Repository) GetRegCode() (string, bool) {
 
-	if strings.HasPrefix(self.RegCode, "${") && strings.HasSuffix(self.RegCode, "}") {
-		key := strings.TrimPrefix(self.RegCode, "${")
+	if strings.HasPrefix(r.RegCode, "${") && strings.HasSuffix(r.RegCode, "}") {
+		key := strings.TrimPrefix(r.RegCode, "${")
 		key = strings.TrimSuffix(key, "}")
 		return os.LookupEnv(key)
 	}
 
-	return self.RegCode, true
+	return r.RegCode, true
 }
 
-func (self *Repository) Clean() error {
-	rm, err := repomd.NewRepoMd(self.RemoteURI, self.secret, self.CacheDir+"/"+self.Name)
+func (r *Repository) Clean() error {
+	rm, err := repomd.NewRepoMd(r.RemoteURI, r.secret, r.CacheDir+"/"+r.Name)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("  * %s\n", self.Name)
+	fmt.Printf("  * %s\n", r.Name)
 
 	if err := rm.Clean(); err != nil {
 		return err
@@ -80,44 +80,44 @@ func (self *Repository) Clean() error {
 	return nil
 }
 
-func (self *Repository) Sync() error {
+func (r *Repository) Sync() error {
 
 	var err error = nil
 
-	fmt.Printf("  * %s\n", self.Name)
+	fmt.Printf("  * %s\n", r.Name)
 
-	if self.Vendor == "SUSE" {
+	if r.Vendor == "SUSE" {
 		//fmt.Println("  - Fetch SUSE products json if older then x hours")
 
-		regCode, ok := self.GetRegCode()
+		regCode, ok := r.GetRegCode()
 		if !ok {
-			return errors.New(fmt.Sprintf("Environment variable %v not set", self.RegCode))
+			return errors.New(fmt.Sprintf("Environment variable %v not set", r.RegCode))
 		}
 
-		scc := suse.NewSCCApi(regCode, self.CacheDir)
+		scc := suse.NewSCCApi(regCode, r.CacheDir)
 		if err := scc.FetchProductsJson(); err != nil {
 			return err
 		}
 
 		//fmt.Println("  - Get secret hash for give URL repo")
 
-		self.secret, ok = scc.GetSecretURI(self.RemoteURI)
+		r.secret, ok = scc.GetSecretURI(r.RemoteURI)
 		if !ok {
-			return errors.New(fmt.Sprintf("Secret for url  %v not found", self.RemoteURI))
+			return errors.New(fmt.Sprintf("Secret for url  %v not found", r.RemoteURI))
 		}
 	}
 
 	//fmt.Println("  - Fetch repomd xml file")
-	self.metadata, err = repomd.NewRepoMd(self.RemoteURI, self.secret, self.CacheDir+"/"+self.Name)
+	r.metadata, err = repomd.NewRepoMd(r.RemoteURI, r.secret, r.CacheDir+"/"+r.Name)
 	if err != nil {
 		return err
 	}
 
-	if err := self.metadata.Metadata(); err != nil {
+	if err := r.metadata.Metadata(); err != nil {
 		return err
 	}
 
-	//fmt.Println("Package count:", self.metadata.PackageCount())
+	//fmt.Println("Package count:", r.metadata.PackageCount())
 
 	// given a repository
 
@@ -137,37 +137,37 @@ func (self *Repository) Sync() error {
 	// and main dir does exist
 	// then topLevelDir should be set to 'main'
 
-	self.topLevelDir = self.LocalURI + "/" + "main"
+	r.topLevelDir = r.LocalURI + "/" + "main"
 
-	if self.GetUpdatePolicy() == "stage" {
-		if file.IsDirectory(self.topLevelDir) {
+	if r.GetUpdatePolicy() == "stage" {
+		if file.IsDirectory(r.topLevelDir) {
 			t := time.Now()
 			timeStamp := fmt.Sprintf("%02d%02d%02d-%02d%02d%02d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
-			self.topLevelDir = self.LocalURI + "/" + timeStamp
+			r.topLevelDir = r.LocalURI + "/" + timeStamp
 		} else {
-			self.topLevelDir = self.LocalURI + "/" + "main"
+			r.topLevelDir = r.LocalURI + "/" + "main"
 		}
 
 	}
 
 	// create toplevel dir
-	if err := os.MkdirAll(self.LocalURI, 0755); err != nil {
+	if err := os.MkdirAll(r.LocalURI, 0755); err != nil {
 		return err
 	}
 
-	if err := self.markPackagesForDownload(); err != nil {
+	if err := r.markPackagesForDownload(); err != nil {
 		return err
 	}
 
-	rpms := self.metadata.Packages()
+	rpms := r.metadata.Packages()
 
-	//fmt.Println("DEBUG - POLICY - ", self.GetUpdatePolicy())
-	//fmt.Println("DEBUG - TOPDIR - ", self.topLevelDir)
+	//fmt.Println("DEBUG - POLICY - ", r.GetUpdatePolicy())
+	//fmt.Println("DEBUG - TOPDIR - ", r.topLevelDir)
 
 	for _, p := range rpms {
 		//fmt.Printf("package: %v  download: %v\n", p.Name, p.ToDownload)
 		if p.ToDownload {
-			if err := self.downloadPackage(p); err != nil {
+			if err := r.downloadPackage(p); err != nil {
 				return err
 			}
 		}
@@ -181,8 +181,8 @@ func (self *Repository) Sync() error {
 	return nil
 }
 
-func (self *Repository) matchPatterns(p []string, s string) (bool, error) {
-	if len(self.IncludePatterns) == 0 {
+func (r *Repository) matchPatterns(p []string, s string) (bool, error) {
+	if len(r.IncludePatterns) == 0 {
 		return true, nil
 	}
 
@@ -199,12 +199,12 @@ func (self *Repository) matchPatterns(p []string, s string) (bool, error) {
 	return false, nil
 }
 
-func (self *Repository) markPackagesForDownload() error {
+func (r *Repository) markPackagesForDownload() error {
 
 	var localPackages []string
 
 	// build list of local rpm filepaths and store it in localPackages
-	err := filepath.Walk(self.LocalURI, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(r.LocalURI, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -224,28 +224,28 @@ func (self *Repository) markPackagesForDownload() error {
 		return err
 	}
 
-	for i, p := range self.metadata.Packages() {
-		ok, err := self.matchPatterns(self.IncludePatterns, p.Loc.Path)
+	for i, p := range r.metadata.Packages() {
+		ok, err := r.matchPatterns(r.IncludePatterns, p.Loc.Path)
 		if err != nil {
 			return err
 		}
 
 		if ok {
 			//fmt.Printf("DEBUG MARK p: %v\n", p.Loc.Path)
-			self.metadata.PrimaryData.Package[i].ToDownload = true
-			//self.metadata.Packages()[i].ToDownload = true
+			r.metadata.PrimaryData.Package[i].ToDownload = true
+			//r.metadata.Packages()[i].ToDownload = true
 			//p.ToDownload = true
 
 			for _, lp := range localPackages {
 				if strings.HasSuffix(lp, p.Loc.Path) {
 					//p.ToDownload = false
-					self.metadata.PrimaryData.Package[i].ToDownload = false
-					//	self.metadata.Packages()[i].ToDownload = false
+					r.metadata.PrimaryData.Package[i].ToDownload = false
+					//	r.metadata.Packages()[i].ToDownload = false
 				}
 
 				// store the local path in case the package was not complelty downloaded
 				if strings.HasSuffix(strings.TrimSuffix(lp, tmpSuffix), p.Loc.Path) {
-					self.metadata.PrimaryData.Package[i].LocalPath = strings.TrimSuffix(lp, p.Loc.Path+tmpSuffix)
+					r.metadata.PrimaryData.Package[i].LocalPath = strings.TrimSuffix(lp, p.Loc.Path+tmpSuffix)
 				}
 			}
 		}
@@ -254,9 +254,9 @@ func (self *Repository) markPackagesForDownload() error {
 	return nil
 }
 
-func (self *Repository) packageExistsLocal(p repomd.RpmPackage) (bool, error) {
+func (r *Repository) packageExistsLocal(p repomd.RpmPackage) (bool, error) {
 
-	fullPath := self.LocalURI + "/" + p.Loc.Path
+	fullPath := r.LocalURI + "/" + p.Loc.Path
 
 	_, err := os.Open(fullPath)
 
@@ -271,11 +271,11 @@ func (self *Repository) packageExistsLocal(p repomd.RpmPackage) (bool, error) {
 	return false, err
 }
 
-func (self *Repository) downloadPackage(p repomd.RpmPackage) error {
+func (r *Repository) downloadPackage(p repomd.RpmPackage) error {
 
-	rpmDir := self.topLevelDir + "/" + filepath.Dir(p.Loc.Path)
-	remoteRpmPath := self.RemoteURI + "/" + p.Loc.Path + "?" + self.secret
-	localRpmPath := self.topLevelDir + "/" + p.Loc.Path + tmpSuffix
+	rpmDir := r.topLevelDir + "/" + filepath.Dir(p.Loc.Path)
+	remoteRpmPath := r.RemoteURI + "/" + p.Loc.Path + "?" + r.secret
+	localRpmPath := r.topLevelDir + "/" + p.Loc.Path + tmpSuffix
 
 	if p.LocalPath != "" {
 		localRpmPath = p.LocalPath + "/" + p.Loc.Path + tmpSuffix
