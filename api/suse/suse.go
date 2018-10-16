@@ -71,11 +71,8 @@ func (s *SCCApi) FetchProductsJson() error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(s.cacheFile, body, 0600); err != nil {
-		return err
-	}
-
-	return nil
+	err = ioutil.WriteFile(s.cacheFile, body, 0600)
+	return err
 }
 
 func (s *SCCApi) GetSecretURI(url string) (string, bool) {

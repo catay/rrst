@@ -83,11 +83,8 @@ func (r *Repomd) loadFromLocalRepoCache() error {
 		return err
 	}
 
-	if err := xml.Unmarshal(data, r); err != nil {
-		return err
-	}
-
-	return nil
+	err = xml.Unmarshal(data, r)
+	return err
 }
 
 // Load the struct variables with data from the remote repomd XML file
@@ -165,21 +162,12 @@ func (r *Repomd) Metadata() error {
 
 	}
 
-	if err := r.unmarchalPrimaryData(); err != nil {
-		return err
-	}
-
-	return nil
+	return r.unmarchalPrimaryData()
 }
 
 // Remove the cache directory and content for the repository.
 func (r *Repomd) Clean() error {
-
-	if err := os.RemoveAll(r.CacheDir); err != nil {
-		return err
-	}
-
-	return nil
+	return os.RemoveAll(r.CacheDir)
 }
 
 // 0.  fetch remote repodata.xml in memory
@@ -265,20 +253,12 @@ func (r *Repomd) fetchRepomdFile(fileLocation string) error {
 		}
 	}
 
-	if err := ioutil.WriteFile(r.CacheDir+"/"+path.Base(fileLocation), content, 0600); err != nil {
-		return err
-	}
-
-	return nil
+	return ioutil.WriteFile(r.CacheDir+"/"+path.Base(fileLocation), content, 0600)
 
 }
 
 func (r *Repomd) removeRepomdFile(fileLocation string) error {
-	if err := os.Remove(r.CacheDir + "/" + path.Base(fileLocation)); err != nil {
-		return err
-	}
-
-	return nil
+	return os.Remove(r.CacheDir + "/" + path.Base(fileLocation))
 }
 
 func (r *Repomd) unmarchalPrimaryData() error {
@@ -305,11 +285,7 @@ func (r *Repomd) unmarchalPrimaryData() error {
 		return err
 	}
 
-	if err := xml.Unmarshal(data, &r.PrimaryData); err != nil {
-		return err
-	}
-
-	return nil
+	return xml.Unmarshal(data, &r.PrimaryData)
 }
 
 func (r *Repomd) Packages() []RpmPackage {

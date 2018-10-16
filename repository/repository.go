@@ -72,11 +72,9 @@ func (r *Repository) Clean() error {
 
 	fmt.Printf("  * %s\n", r.Name)
 
-	if err := rm.Clean(); err != nil {
-		return err
-	}
+	err = rm.Clean()
 
-	return nil
+	return err
 }
 
 func (r *Repository) Sync() error {
@@ -336,10 +334,8 @@ func (r *Repository) downloadPackage(p repomd.RpmPackage) error {
 	f.Close()
 
 	// rename the file by removing the filepart suffix
-	if err := os.Rename(localRpmPath, strings.TrimSuffix(localRpmPath, tmpSuffix)); err != nil {
-		return err
-	}
+	err = os.Rename(localRpmPath, strings.TrimSuffix(localRpmPath, tmpSuffix))
 
-	return nil
+	return err
 
 }
