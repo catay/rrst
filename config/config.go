@@ -2,68 +2,107 @@ package config
 
 import (
 	"fmt"
-	"github.com/catay/rrst/repository"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"os"
 )
 
-type ConfigData struct {
-	Version int                     `yaml:"version"`
-	Globals globals                 `yaml:"globals"`
-	Repos   []repository.Repository `yaml:"repositories"`
+// Default configuration values.
+const (
+	DefaultContentPath    = "~/.rrst/content"
+	DefaultMaxTagsToKeep = 50
+	ContentPathEnv        = "RRST_CONTENT_PATH"
+)
+
+// Config is the top-level configuration for rrst.
+type Config struct {
+	Version      string              `yaml:"version"`
+	GlobalConfig GlobalConfig        `yaml:"global"`
+	RepoConfig   []*RepositoryConfig `yaml:"repositories"`
 }
 
-type globals struct {
-	CacheDir string `yaml:"cache_dir"`
-	ProxyURL string `yaml:"proxy_url"`
+// GlobalConfig contains the global configuration settings.
+type GlobalConfig struct {
+	ContentPath      string `yaml:"content_path"`
+	MaxTagsToKeep   int    `yaml:"max_tags_to_keep"`
+	ContentFilesPath string
+	ContentMDPath    string
+	ContentTmpPath   string
 }
 
-func NewConfig(configFile string) (c *ConfigData, err error) {
-	c = &ConfigData{
-		Globals: globals{CacheDir: "/var/cache/rrst"},
+// RepositoryConfig contains the per repository configuration settings.
+type RepositoryConfig struct {
+	Id                int      `yaml:"id"`
+	Name              string   `yaml:"name"`
+	RType             string   `yaml:"type"`
+	Vendor            string   `yaml:"vendor"`
+	RegCode           string   `yaml:"reg_code"`
+	RemoteURI         string   `yaml:"remote_uri"`
+	ContentSuffixPath string   `yaml:"content_suffix_path"`
+	IncludePatterns   []string `yaml:"include_patterns"`
+	MaxTagsToKeep    int      `yaml:"max_tags_to_keep"`
+	Enabled           bool     `yaml:"enabled"`
+	ContentPath       string
+}
+
+// NewConfig loads the configuration from a YAML file and returns it.
+// The config will be nil when an error is encountered.
+func NewConfig(configFile string) (c *Config, err error) {
+	// Set the configuration default values.
+	c = &Config{
+		GlobalConfig: GlobalConfig{
+			ContentPath:    DefaultContentPath,
+			MaxTagsToKeep: DefaultMaxTagsToKeep,
+		},
 	}
 
+	// Set content path from environment variable when present.
+	if v := os.Getenv(ContentPathEnv); v != "" {
+		c.GlobalConfig.ContentPath = v
+	}
+
+	// Load the configuration values from the YAML config file.
+	if err := c.LoadFromYAMLFile(configFile); err != nil {
+		return nil, fmt.Errorf("error loading config: %s", err)
+	}
+
+	// Set repository configuration defaults when not set after
+	// loading the YAML file.
+	c.SetRepositoryConfigDefaults()
+
+	return c, nil
+}
+
+// Load a configuration from a YAML file and set the config values.
+func (c *Config) LoadFromYAMLFile(configFile string) (err error) {
 	data, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// file can't be empty
 	if len(data) == 0 {
-		return nil, fmt.Errorf("%s is empty", configFile)
+		return fmt.Errorf("open %s: file is empty", configFile)
 	}
 
 	if err := yaml.UnmarshalStrict(data, c); err != nil {
-		return nil, err
-	}
-
-	c.SetReposDefaults()
-
-	return c, err
-}
-
-func (c *ConfigData) SetReposDefaults() {
-	for i, r := range c.Repos {
-		if r.CacheDir == "" {
-			//r.CacheDir = c.Globals.CacheDir
-			c.Repos[i].CacheDir = c.Globals.CacheDir
-		}
-	}
-}
-
-func (c *ConfigData) Print() {
-	for _, r := range c.Repos {
-		fmt.Println("*", r.Name, r.CacheDir)
-	}
-}
-
-// Return a matching repository or nil if not found.
-func (c *ConfigData) GetRepoByName(name string) *repository.Repository {
-	for _, r := range c.Repos {
-		if r.Name == name {
-			return &r
-		}
+		return err
 	}
 
 	return nil
+}
+
+// Set the repository configuration defaults when not set.
+func (c *Config) SetRepositoryConfigDefaults() {
+	// Loop over all repo configs and set defaults when not
+	// initialized.
+	for i, r := range c.RepoConfig {
+		if r.ContentPath == "" {
+			c.RepoConfig[i].ContentPath = c.GlobalConfig.ContentPath
+		}
+
+		if r.MaxTagsToKeep == 0 {
+			c.RepoConfig[i].MaxTagsToKeep = c.GlobalConfig.MaxTagsToKeep
+		}
+	}
 }

@@ -1,19 +1,23 @@
-globals:
-  cache_dir: /var/tmp/rrst/cache
+global:
+  content_path: /var/tmp/rrst
+  max_tags_to_keep: 10
 repositories:
-  - name: SLES-12-3-X86_64-updates
+  - id: 1
+    name: SLES-12-3-X86_64-updates
     type: rpmmd
     vendor: SUSE
     reg_code: ${SCC_REG_CODE_01}
     remote_uri: https://updates.suse.com/SUSE/Updates/SLE-SERVER/12-SP3/x86_64/update
-    local_uri: /var/tmp/packages/SLES-12-3-x86_64/updates
-    update_policy: staged|main
-    update_suffix: tbd
-  - name: SLES-11-4-X86_64-updates
+    content_suffix_path: SLES/12/3/x86_64/updates
+    enabled:  true
+    include_patterns:
+      - '.*bash-.4'
+      - 'x86_64/bind-9.9.9P1-63.7.1.x86_64.rpm'
+  - id: 2
+    name: SLES-11-4-X86_64-updates
     type: rpmmd
     vendor: SUSE
     reg_code: ${SCC_REG_CODE_02}
     remote_uri: https://updates.suse.com/SUSE/Updates/SLE-SERVER/11-SP4/x86_64/update
-    local_uri: /var/tmp/packages/SLES/11/3/x86_64/updates
-    update_policy: staged|main
-    update_suffix: tbd
+    enabled:  true
+    content_suffix_path: SLES/11/3/x86_64/updates

@@ -1,16 +1,15 @@
 package config_test
 
 import (
+	. "github.com/catay/rrst/config"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	. "github.com/catay/rrst/config"
 )
 
 var _ = Describe("Config", func() {
 
 	var configFile string
-	var config *ConfigData
+	var config *Config
 	var err error
 
 	BeforeEach(func() {
@@ -24,18 +23,16 @@ var _ = Describe("Config", func() {
 	Describe("YAML configuration file", func() {
 		Context("when initializing a valid YAML configuration file", func() {
 
-			It("has the global cache dir set", func() {
-				Expect(config.Globals.CacheDir).To(Equal("/var/tmp/rrst/cache"))
+			It("has the global content path set", func() {
+				Expect(config.GlobalConfig.ContentPath).To(Equal("/var/tmp/rrst"))
 			})
 
-			It("has repositories set", func() {
-				Expect(len(config.Repos)).To(Equal(2))
+			It("has the max tags to keep set", func() {
+				Expect(config.GlobalConfig.MaxTagsToKeep).To(Equal(10))
 			})
 
-			It("has the cache dir of repositories set", func() {
-				for _, r := range config.Repos {
-					Expect(r.CacheDir).To(Equal(config.Globals.CacheDir))
-				}
+			It("has repositories configured", func() {
+				Expect(len(config.RepoConfig)).To(Equal(2))
 			})
 
 			It("should not error", func() {
