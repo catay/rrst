@@ -18,7 +18,7 @@ const (
 type Config struct {
 	Version      string              `yaml:"version"`
 	GlobalConfig GlobalConfig        `yaml:"global"`
-	RepoConfig   []*RepositoryConfig `yaml:"repositories"`
+	RepoConfigs   []*RepositoryConfig `yaml:"repositories"`
 }
 
 // GlobalConfig contains the global configuration settings.
@@ -96,13 +96,13 @@ func (c *Config) LoadFromYAMLFile(configFile string) (err error) {
 func (c *Config) SetRepositoryConfigDefaults() {
 	// Loop over all repo configs and set defaults when not
 	// initialized.
-	for i, r := range c.RepoConfig {
+	for i, r := range c.RepoConfigs {
 		if r.ContentPath == "" {
-			c.RepoConfig[i].ContentPath = c.GlobalConfig.ContentPath
+			c.RepoConfigs[i].ContentPath = c.GlobalConfig.ContentPath
 		}
 
 		if r.MaxTagsToKeep == 0 {
-			c.RepoConfig[i].MaxTagsToKeep = c.GlobalConfig.MaxTagsToKeep
+			c.RepoConfigs[i].MaxTagsToKeep = c.GlobalConfig.MaxTagsToKeep
 		}
 	}
 }

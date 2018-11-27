@@ -32,7 +32,7 @@ var _ = Describe("Config", func() {
 			})
 
 			It("has repositories configured", func() {
-				Expect(len(config.RepoConfig)).To(Equal(2))
+				Expect(len(config.RepoConfigs)).To(Equal(2))
 			})
 
 			It("should not error", func() {
