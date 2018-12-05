@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	tmpSuffix = ".filepart"
+	systemTagPrefix = "__system__"
+	tmpSuffix       = ".filepart"
 )
 
 //type Tag struct {
@@ -29,7 +30,7 @@ const (
 // Repository data model.
 type Repository struct {
 	*config.RepositoryConfig
-	Tags []string
+	SystemTags []string
 	//secret      string
 	//topLevelDir string
 	//metadata    *repomd.Repomd
@@ -48,7 +49,7 @@ func NewRepository(repoConfig *config.RepositoryConfig) (r *Repository) {
 
 func (r *Repository) Update() error {
 
-	if err := r.createTag(""); err != nil {
+	if err := r.createSystemTag(); err != nil {
 		return fmt.Errorf("tag creation failed: %s", err)
 	}
 
@@ -56,13 +57,13 @@ func (r *Repository) Update() error {
 }
 
 func (r *Repository) getState() error {
-	r.getTagState()
+	r.getSystemTagState()
 	return nil
 }
 
 // getTagState fetches all tag directories of of the metadata dir.
 // FIXME: add extra check to make sure there is a repomd.xml file in the tag dir.
-func (r *Repository) getTagState() error {
+func (r *Repository) getSystemTagState() error {
 
 	files, err := ioutil.ReadDir(r.ContentMDPath)
 	if err != nil {
@@ -71,7 +72,7 @@ func (r *Repository) getTagState() error {
 
 	for _, v := range files {
 		if v.IsDir() {
-			r.Tags = append(r.Tags, v.Name())
+			r.SystemTags = append(r.SystemTags, v.Name())
 		}
 	}
 
@@ -82,19 +83,17 @@ func (r *Repository) hasSystemTags() bool {
 	return true
 }
 
-// The createTag method will create a repository tag.
-// A tag directory will be created under ContentMDPath/ContentSuffixPath.
-// If name argument is nil,  a system tag will be created.
-// If name argument is not nil, a custom tag will be created.
-func (r *Repository) createTag(name string) error {
-	var tagdir string
+// The getNewSystemTag returns a newly generated system tag.
+// Format: __system__epoch__
+func (r *Repository) getNewSystemTag() string {
+	time := time.Now()
+	return fmt.Sprintf(systemTagPrefix+"%v__", time.Unix())
+}
 
-	if name != "" {
-		tagdir = r.ContentMDPath + "/" + name
-	} else {
-		time := time.Now()
-		tagdir = r.ContentMDPath + "/" + fmt.Sprintf("__%v__", time.Unix())
-	}
+// The createSystemTag method will create a system repository tag.
+// A system tag directory will be created under ContentMDPath.
+func (r *Repository) createSystemTag() error {
+	tagdir := r.ContentMDPath + "/" + r.getNewSystemTag()
 
 	if err := os.MkdirAll(tagdir, 0700); err != nil {
 		return err
