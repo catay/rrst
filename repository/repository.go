@@ -64,7 +64,7 @@ func (r *Repository) getState() error {
 // FIXME: add extra check to make sure there is a repomd.xml file in the tag dir.
 func (r *Repository) getTagState() error {
 
-	files, err := ioutil.ReadDir(r.ContentMDPath + "/" + r.ContentSuffixPath)
+	files, err := ioutil.ReadDir(r.ContentMDPath)
 	if err != nil {
 		return err
 	}
@@ -90,10 +90,10 @@ func (r *Repository) createTag(name string) error {
 	var tagdir string
 
 	if name != "" {
-		tagdir = r.ContentMDPath + "/" + r.ContentSuffixPath + "/" + name
+		tagdir = r.ContentMDPath + "/" + name
 	} else {
 		time := time.Now()
-		tagdir = r.ContentMDPath + "/" + r.ContentSuffixPath + "/" + fmt.Sprintf("__%v__", time.Unix())
+		tagdir = r.ContentMDPath + "/" + fmt.Sprintf("__%v__", time.Unix())
 	}
 
 	if err := os.MkdirAll(tagdir, 0700); err != nil {

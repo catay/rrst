@@ -21,10 +21,9 @@ func NewApp(configFile string) (a *App, err error) {
 		return nil, err
 	}
 
-	// initialize content dir and sub dirs
-	// create content_path/{files, metadata, tmp}
-	if err := a.initContentDirectories(); err != nil {
-		return nil, fmt.Errorf("init content directories failed: %s", err)
+	// initialize the root content directory
+	if err := a.initContentPath(); err != nil {
+		return nil, fmt.Errorf("init content path failed: %s", err)
 	}
 
 	// initialize repositories
@@ -102,17 +101,9 @@ func (a *App) getRepoName(repo string) (*repository.Repository, bool) {
 	return nil, false
 }
 
-func (a *App) initContentDirectories() error {
-	dirs := []string{
-		a.config.GlobalConfig.ContentFilesPath,
-		a.config.GlobalConfig.ContentMDPath,
-		a.config.GlobalConfig.ContentTmpPath}
-
-	for _, d := range dirs {
-		if err := os.MkdirAll(d, 0700); err != nil {
-			return err
-		}
+func (a *App) initContentPath() error {
+	if err := os.MkdirAll(a.config.GlobalConfig.ContentPath, 0700); err != nil {
+		return err
 	}
-
 	return nil
 }
