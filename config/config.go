@@ -9,22 +9,25 @@ import (
 
 // Default configuration values.
 const (
-	DefaultContentPath    = "~/.rrst/content"
-	DefaultMaxTagsToKeep = 50
-	ContentPathEnv        = "RRST_CONTENT_PATH"
+	DefaultContentPath            = "~/.rrst/content"
+	DefaultMaxTagsToKeep          = 50
+	DefaultContentFilesPathSuffix = "files"
+	DefaultContentMDPathSuffix    = "metadata"
+	DefaultContentTmpPathSuffix   = "tmp"
+	ContentPathEnv                = "RRST_CONTENT_PATH"
 )
 
 // Config is the top-level configuration for rrst.
 type Config struct {
 	Version      string              `yaml:"version"`
 	GlobalConfig GlobalConfig        `yaml:"global"`
-	RepoConfigs   []*RepositoryConfig `yaml:"repositories"`
+	RepoConfigs  []*RepositoryConfig `yaml:"repositories"`
 }
 
 // GlobalConfig contains the global configuration settings.
 type GlobalConfig struct {
 	ContentPath      string `yaml:"content_path"`
-	MaxTagsToKeep   int    `yaml:"max_tags_to_keep"`
+	MaxTagsToKeep    int    `yaml:"max_tags_to_keep"`
 	ContentFilesPath string
 	ContentMDPath    string
 	ContentTmpPath   string
@@ -40,9 +43,12 @@ type RepositoryConfig struct {
 	RemoteURI         string   `yaml:"remote_uri"`
 	ContentSuffixPath string   `yaml:"content_suffix_path"`
 	IncludePatterns   []string `yaml:"include_patterns"`
-	MaxTagsToKeep    int      `yaml:"max_tags_to_keep"`
+	MaxTagsToKeep     int      `yaml:"max_tags_to_keep"`
 	Enabled           bool     `yaml:"enabled"`
 	ContentPath       string
+	ContentFilesPath  string
+	ContentMDPath     string
+	ContentTmpPath    string
 }
 
 // NewConfig loads the configuration from a YAML file and returns it.
@@ -51,7 +57,7 @@ func NewConfig(configFile string) (c *Config, err error) {
 	// Set the configuration default values.
 	c = &Config{
 		GlobalConfig: GlobalConfig{
-			ContentPath:    DefaultContentPath,
+			ContentPath:   DefaultContentPath,
 			MaxTagsToKeep: DefaultMaxTagsToKeep,
 		},
 	}
@@ -65,6 +71,11 @@ func NewConfig(configFile string) (c *Config, err error) {
 	if err := c.LoadFromYAMLFile(configFile); err != nil {
 		return nil, fmt.Errorf("error loading config: %s", err)
 	}
+
+	// Set content path default sub directories
+	c.GlobalConfig.ContentFilesPath = c.GlobalConfig.ContentPath + "/" + DefaultContentFilesPathSuffix
+	c.GlobalConfig.ContentMDPath = c.GlobalConfig.ContentPath + "/" + DefaultContentMDPathSuffix
+	c.GlobalConfig.ContentTmpPath = c.GlobalConfig.ContentPath + "/" + DefaultContentTmpPathSuffix
 
 	// Set repository configuration defaults when not set after
 	// loading the YAML file.
@@ -104,5 +115,9 @@ func (c *Config) SetRepositoryConfigDefaults() {
 		if r.MaxTagsToKeep == 0 {
 			c.RepoConfigs[i].MaxTagsToKeep = c.GlobalConfig.MaxTagsToKeep
 		}
+
+		c.RepoConfigs[i].ContentFilesPath = c.RepoConfigs[i].ContentPath + "/" + DefaultContentFilesPathSuffix
+		c.RepoConfigs[i].ContentMDPath = c.RepoConfigs[i].ContentPath + "/" + DefaultContentMDPathSuffix
+		c.RepoConfigs[i].ContentTmpPath = c.RepoConfigs[i].ContentPath + "/" + DefaultContentTmpPathSuffix
 	}
 }
