@@ -10,7 +10,7 @@ import (
 // Default configuration values.
 const (
 	DefaultContentPath            = "~/.rrst/content"
-	DefaultMaxTagsToKeep          = 50
+	DefaultMaxRevisionsToKeep     = 50
 	DefaultContentFilesPathSuffix = "files"
 	DefaultContentMDPathSuffix    = "metadata"
 	DefaultContentTmpPathSuffix   = "tmp"
@@ -26,25 +26,25 @@ type Config struct {
 
 // GlobalConfig contains the global configuration settings.
 type GlobalConfig struct {
-	ContentPath   string `yaml:"content_path"`
-	MaxTagsToKeep int    `yaml:"max_tags_to_keep"`
+	ContentPath        string `yaml:"content_path"`
+	MaxRevisionsToKeep int    `yaml:"max_tags_to_keep"`
 }
 
 // RepositoryConfig contains the per repository configuration settings.
 type RepositoryConfig struct {
-	Id                int      `yaml:"id"`
-	Name              string   `yaml:"name"`
-	RType             string   `yaml:"type"`
-	Vendor            string   `yaml:"vendor"`
-	RegCode           string   `yaml:"reg_code"`
-	RemoteURI         string   `yaml:"remote_uri"`
-	ContentSuffixPath string   `yaml:"content_suffix_path"`
-	IncludePatterns   []string `yaml:"include_patterns"`
-	MaxTagsToKeep     int      `yaml:"max_tags_to_keep"`
-	Enabled           bool     `yaml:"enabled"`
-	ContentFilesPath  string
-	ContentMDPath     string
-	ContentTmpPath    string
+	Id                 int      `yaml:"id"`
+	Name               string   `yaml:"name"`
+	RType              string   `yaml:"type"`
+	Vendor             string   `yaml:"vendor"`
+	RegCode            string   `yaml:"reg_code"`
+	RemoteURI          string   `yaml:"remote_uri"`
+	ContentSuffixPath  string   `yaml:"content_suffix_path"`
+	IncludePatterns    []string `yaml:"include_patterns"`
+	MaxRevisionsToKeep int      `yaml:"max_tags_to_keep"`
+	Enabled            bool     `yaml:"enabled"`
+	ContentFilesPath   string
+	ContentMDPath      string
+	ContentTmpPath     string
 }
 
 // NewConfig loads the configuration from a YAML file and returns it.
@@ -53,8 +53,8 @@ func NewConfig(configFile string) (c *Config, err error) {
 	// Set the configuration default values.
 	c = &Config{
 		GlobalConfig: GlobalConfig{
-			ContentPath:   DefaultContentPath,
-			MaxTagsToKeep: DefaultMaxTagsToKeep,
+			ContentPath:        DefaultContentPath,
+			MaxRevisionsToKeep: DefaultMaxRevisionsToKeep,
 		},
 	}
 
@@ -99,8 +99,8 @@ func (c *Config) SetRepositoryConfigDefaults() {
 	// Loop over all repo configs and set defaults when not
 	// overrided at repo level.
 	for i, r := range c.RepoConfigs {
-		if r.MaxTagsToKeep == 0 {
-			c.RepoConfigs[i].MaxTagsToKeep = c.GlobalConfig.MaxTagsToKeep
+		if r.MaxRevisionsToKeep == 0 {
+			c.RepoConfigs[i].MaxRevisionsToKeep = c.GlobalConfig.MaxRevisionsToKeep
 		}
 
 		c.RepoConfigs[i].ContentFilesPath = c.GlobalConfig.ContentPath + "/" + DefaultContentFilesPathSuffix + "/" + r.ContentSuffixPath

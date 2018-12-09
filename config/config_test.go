@@ -28,7 +28,7 @@ var _ = Describe("Config", func() {
 			})
 
 			It("has the max tags to keep set", func() {
-				Expect(config.GlobalConfig.MaxTagsToKeep).To(Equal(10))
+				Expect(config.GlobalConfig.MaxRevisionsToKeep).To(Equal(10))
 			})
 
 			It("has repositories configured", func() {
