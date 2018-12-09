@@ -14,23 +14,16 @@ import (
 	//	"path/filepath"
 	//	"regexp"
 	//	"strings"
-	"time"
 )
 
 const (
-	systemTagPrefix = "__system__"
-	tmpSuffix       = ".filepart"
+	tmpSuffix = ".filepart"
 )
-
-//type Tag struct {
-//	Name     string
-//	metadata *repomd.Repomd
-//}
 
 // Repository data model.
 type Repository struct {
 	*config.RepositoryConfig
-	SystemTags []string
+	Revisions []Revision
 	//secret      string
 	//topLevelDir string
 	//metadata    *repomd.Repomd
@@ -43,28 +36,50 @@ func NewRepository(repoConfig *config.RepositoryConfig) (r *Repository) {
 	}
 
 	r.getState()
-
 	return r
 }
 
-func (r *Repository) Update() error {
+// The Update method fetches the metadata and packages from upstream and
+// stores it locally.
+func (r *Repository) Update() (bool, error) {
+	// dummy var, needs to be removed
+	var repoEqual bool
+	repoEqual = true
+	revision, ok := r.getLatestRevision()
 
-	if err := r.createSystemTag(); err != nil {
-		return fmt.Errorf("tag creation failed: %s", err)
+	fmt.Println(" > fetch upstream repomd.xml in memory")
+
+	if ok {
+		fmt.Println(" > compare upstream repomd.xml with latest revision repomd.xml")
+		if repoEqual {
+			fmt.Println(" > upstream and latest revision equal, do nothing")
+			return false, nil
+		}
 	}
 
-	return nil
+	fmt.Println(" > create new revision")
+	revision = NewRevision()
+
+	if err := r.createRevisionDir(revision); err != nil {
+		return false, fmt.Errorf("revision creation failed: %s", err)
+	}
+
+	fmt.Println(" > save upstream repomd.xml to disk")
+	fmt.Println(" > fetch packages")
+	fmt.Println(" > link revision to latest tag")
+	return true, nil
 }
 
+// The getState method updates the data structures with the state on disk.
 func (r *Repository) getState() error {
-	r.getSystemTagState()
+	r.getRevisionState()
 	return nil
 }
 
-// getTagState fetches all tag directories of of the metadata dir.
+// getRevisionState fetches all revision directories of the metadata dir.
 // FIXME: add extra check to make sure there is a repomd.xml file in the tag dir.
-func (r *Repository) getSystemTagState() error {
-
+// FIXME: also make sure only tags get added with correct pattern.
+func (r *Repository) getRevisionState() error {
 	files, err := ioutil.ReadDir(r.ContentMDPath)
 	if err != nil {
 		return err
@@ -72,34 +87,51 @@ func (r *Repository) getSystemTagState() error {
 
 	for _, v := range files {
 		if v.IsDir() {
-			r.SystemTags = append(r.SystemTags, v.Name())
+			rev, err := NewRevisionFromString(v.Name())
+			if err == nil {
+				r.Revisions = append(r.Revisions, rev)
+			}
 		}
 	}
-
 	return nil
 }
 
-func (r *Repository) hasSystemTags() bool {
-	return true
+// The hasRevisions returns true if there are revisions.
+// false if no revisions exist.
+func (r *Repository) hasRevisions() bool {
+	if len(r.Revisions) > 0 {
+		return true
+	}
+	return false
 }
 
-// The getNewSystemTag returns a newly generated system tag.
-// Format: __system__epoch__
-func (r *Repository) getNewSystemTag() string {
-	time := time.Now()
-	return fmt.Sprintf(systemTagPrefix+"%v__", time.Unix())
-}
+// The createRevisionDir method creates the revision directory under
+// the metadata structure.
+func (r *Repository) createRevisionDir(rev Revision) error {
+	revisionDir := r.ContentMDPath + "/" + rev.String()
 
-// The createSystemTag method will create a system repository tag.
-// A system tag directory will be created under ContentMDPath.
-func (r *Repository) createSystemTag() error {
-	tagdir := r.ContentMDPath + "/" + r.getNewSystemTag()
-
-	if err := os.MkdirAll(tagdir, 0700); err != nil {
+	if err := os.MkdirAll(revisionDir, 0700); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// The getLatestRevision returns the most recent revision and a bool set
+// to true if found. If not found it returns an empty revision and a bool
+// set to false.
+func (r *Repository) getLatestRevision() (Revision, bool) {
+	var rev Revision
+	var ok bool
+	if r.hasRevisions() {
+		for _, v := range r.Revisions {
+			if v > rev {
+				rev = v
+				ok = true
+			}
+		}
+	}
+	return rev, ok
 }
 
 // GetRegCode will return the regcode when set through an environment

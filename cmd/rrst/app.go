@@ -47,13 +47,13 @@ func (a *App) List(repo string) {
 
 	if repo != "" {
 		if r, ok := a.getRepoName(repo); ok {
-			fmt.Println(r.Id, r.Name, r.ContentSuffixPath, len(r.SystemTags))
+			fmt.Println(r.Id, r.Name, r.ContentSuffixPath, len(r.Revisions))
 		} else {
 			fmt.Println("No configured repository", repo, "found.")
 		}
 	} else {
 		for _, r := range a.repositories {
-			fmt.Println(r.Id, r.Name, r.ContentSuffixPath, len(r.SystemTags))
+			fmt.Println(r.Id, r.Name, r.ContentSuffixPath, len(r.Revisions))
 		}
 	}
 }
