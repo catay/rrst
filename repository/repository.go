@@ -3,21 +3,23 @@ package repository
 import (
 	"fmt"
 	"github.com/catay/rrst/config"
+	"github.com/catay/rrst/repository/repomd"
+	h "github.com/catay/rrst/util/http"
 	"io/ioutil"
+	"net/http"
+	"os"
 	//	"github.com/catay/rrst/api/suse"
 	//	"github.com/catay/rrst/repomd"
 	//	"github.com/catay/rrst/util/file"
-	//	h "github.com/catay/rrst/util/http"
 	//	"io"
-	//	"net/http"
-	"os"
 	//	"path/filepath"
 	//	"regexp"
 	//	"strings"
 )
 
 const (
-	tmpSuffix = ".filepart"
+	tmpSuffix   = ".filepart"
+	repoXMLfile = "/repodata/repomd.xml"
 )
 
 // Repository data model.
@@ -42,32 +44,14 @@ func NewRepository(repoConfig *config.RepositoryConfig) (r *Repository) {
 // The Update method fetches the metadata and packages from upstream and
 // stores it locally.
 func (r *Repository) Update() (bool, error) {
-	// dummy var, needs to be removed
-	var repoEqual bool
-	repoEqual = true
-	revision, ok := r.getLatestRevision()
-
-	fmt.Println(" > fetch upstream repomd.xml in memory")
-
-	if ok {
-		fmt.Println(" > compare upstream repomd.xml with latest revision repomd.xml")
-		if repoEqual {
-			fmt.Println(" > upstream and latest revision equal, do nothing")
-			return false, nil
-		}
+	ok, err := r.getMetadata()
+	if err != nil {
+		return ok, err
 	}
 
-	fmt.Println(" > create new revision")
-	revision = NewRevision()
-
-	if err := r.createRevisionDir(revision); err != nil {
-		return false, fmt.Errorf("revision creation failed: %s", err)
-	}
-
-	fmt.Println(" > save upstream repomd.xml to disk")
 	fmt.Println(" > fetch packages")
 	fmt.Println(" > link revision to latest tag")
-	return true, nil
+	return ok, nil
 }
 
 // The getState method updates the data structures with the state on disk.
@@ -108,7 +92,7 @@ func (r *Repository) hasRevisions() bool {
 // The createRevisionDir method creates the revision directory under
 // the metadata structure.
 func (r *Repository) createRevisionDir(rev Revision) error {
-	revisionDir := r.ContentMDPath + "/" + rev.String()
+	revisionDir := r.getRevisionDir(rev) + "/repodata"
 
 	if err := os.MkdirAll(revisionDir, 0700); err != nil {
 		return err
@@ -132,6 +116,76 @@ func (r *Repository) getLatestRevision() (Revision, bool) {
 		}
 	}
 	return rev, ok
+}
+
+// The getRevisionDir method returns the full revision directory path.
+func (r *Repository) getRevisionDir(rev Revision) string {
+	revisionDir := r.ContentMDPath + "/" + rev.String()
+	return revisionDir
+}
+
+func (r *Repository) getMetadata() (bool, error) {
+	revision, ok := r.getLatestRevision()
+
+	fmt.Println(" > fetch upstream repomd.xml in memory")
+
+	req, err := http.NewRequest("GET", r.RemoteURI+repoXMLfile, nil)
+	if err != nil {
+		return false, err
+	}
+
+	resp, err := h.HttpProxyGet(req)
+	if err != nil {
+		return false, err
+	}
+
+	defer resp.Body.Close()
+
+	current, err := repomd.NewRepomdXML(resp.Body)
+	if err != nil {
+		return false, err
+	}
+
+	if ok {
+		fmt.Println(" > compare upstream repomd.xml with latest revision repomd.xml")
+		f, err := os.Open(r.getRevisionDir(revision) + repoXMLfile)
+		if err != nil {
+			return false, err
+		}
+		defer f.Close()
+
+		previous, err := repomd.NewRepomdXML(f)
+		if err != nil {
+			return false, err
+		}
+
+		if previous.Compare(current) {
+			fmt.Println(" > upstream and latest revision equal, do nothing")
+			return false, nil
+		}
+	}
+
+	fmt.Println(" > create new revision")
+	revision = NewRevision()
+
+	if err := r.createRevisionDir(revision); err != nil {
+		return false, fmt.Errorf("revision creation failed: %s", err)
+	}
+
+	fmt.Println(" > save upstream repomd.xml to disk")
+	if err := current.Save(r.getRevisionDir(revision) + repoXMLfile); err != nil {
+		return false, err
+	}
+
+	for _, v := range current.Data {
+		fmt.Println("  > ", v.Location.Path)
+		if err := h.HttpGetFile(r.RemoteURI+"/"+v.Location.Path, r.getRevisionDir(revision)+"/"+v.Location.Path); err != nil {
+			return false, err
+		}
+	}
+
+	return true, nil
+
 }
 
 // GetRegCode will return the regcode when set through an environment
