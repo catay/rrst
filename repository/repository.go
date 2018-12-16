@@ -129,19 +129,7 @@ func (r *Repository) getMetadata() (bool, error) {
 
 	fmt.Println(" > fetch upstream repomd.xml in memory")
 
-	req, err := http.NewRequest("GET", r.RemoteURI+repoXMLfile, nil)
-	if err != nil {
-		return false, err
-	}
-
-	resp, err := h.HttpProxyGet(req)
-	if err != nil {
-		return false, err
-	}
-
-	defer resp.Body.Close()
-
-	current, err := repomd.NewRepomdXML(resp.Body)
+	current, err := r.getUpstreamMetadata()
 	if err != nil {
 		return false, err
 	}
@@ -186,6 +174,21 @@ func (r *Repository) getMetadata() (bool, error) {
 
 	return true, nil
 
+}
+
+func (r *Repository) getUpstreamMetadata() (*repomd.RepomdXML, error) {
+	req, err := http.NewRequest("GET", r.RemoteURI+repoXMLfile, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := h.HttpProxyGet(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	return repomd.NewRepomdXML(resp.Body)
 }
 
 // GetRegCode will return the regcode when set through an environment
