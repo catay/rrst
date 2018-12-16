@@ -58,7 +58,7 @@ func (a *App) List(repo string) {
 	}
 }
 
-func (a *App) Update(repo string) {
+func (a *App) Update(repo string, rev string) {
 	if len(a.repositories) == 0 {
 		fmt.Println("No repositories configured.")
 		return
@@ -67,14 +67,17 @@ func (a *App) Update(repo string) {
 	if repo != "" {
 		if r, ok := a.getRepoName(repo); ok {
 			fmt.Printf("* Updating %s ...\n", r.Name)
-			r.Update()
+			_, err := r.Update(rev)
+			if err != nil {
+				fmt.Println(" > error: ", err)
+			}
 		} else {
 			fmt.Println("No configured repository", repo, "found.")
 		}
 	} else {
 		for _, r := range a.repositories {
 			fmt.Printf("* Updating %s ...\n", r.Name)
-			r.Update()
+			r.Update(rev) // rev will always be empty
 		}
 	}
 }

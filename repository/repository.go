@@ -43,15 +43,32 @@ func NewRepository(repoConfig *config.RepositoryConfig) (r *Repository) {
 
 // The Update method fetches the metadata and packages from upstream and
 // stores it locally.
-func (r *Repository) Update() (bool, error) {
-	ok, err := r.getMetadata()
-	if err != nil {
-		return ok, err
+func (r *Repository) Update(rev string) (bool, error) {
+	var revision Revision
+	var err error
+
+	// If revision not set, new metadata has to be fetched and will set the revision
+	// If revision set, metadata should already be there
+	if rev == "" {
+		revision, err = r.getMetadata()
+		if err != nil {
+			return false, err
+		}
+	} else {
+		revision, err = NewRevisionFromString(rev)
+		if err != nil {
+			return false, err
+		}
+
+		if !r.isRevision(revision) {
+			return false, fmt.Errorf("Not a valid or existing revision.")
+		}
 	}
 
-	fmt.Println(" > fetch packages")
+	r.getPackages(revision)
+
 	fmt.Println(" > link revision to latest tag")
-	return ok, nil
+	return true, nil
 }
 
 // The getState method updates the data structures with the state on disk.
@@ -86,6 +103,18 @@ func (r *Repository) hasRevisions() bool {
 	if len(r.Revisions) > 0 {
 		return true
 	}
+	return false
+}
+
+// The isRevision method returns true if revision exists,
+// false if revision doesn't exist.
+func (r *Repository) isRevision(rev Revision) bool {
+	for _, v := range r.Revisions {
+		if v == rev {
+			return true
+		}
+	}
+
 	return false
 }
 
@@ -124,53 +153,57 @@ func (r *Repository) getRevisionDir(rev Revision) string {
 	return revisionDir
 }
 
-func (r *Repository) getMetadata() (bool, error) {
-	revision, ok := r.getLatestRevision()
+// The getMetadata method downloads the repomd metadata when required and
+// returns the matching revision.
+func (r *Repository) getMetadata() (Revision, error) {
+	rev, ok := r.getLatestRevision()
 
 	fmt.Println(" > fetch upstream repomd.xml in memory")
 
 	current, err := r.getUpstreamMetadata()
 	if err != nil {
-		return false, err
+		return rev, err
 	}
 
 	if ok {
 		fmt.Println(" > compare upstream repomd.xml with latest revision repomd.xml")
 
-		previous, err := r.getLocalMetadata(revision)
+		previous, err := r.getLocalMetadata(rev)
 		if err != nil {
-			return false, err
+			return rev, err
 		}
 
 		if previous.Compare(current) {
 			fmt.Println(" > upstream and latest revision equal, do nothing")
-			return false, nil
+			return rev, nil
 		}
 	}
 
 	fmt.Println(" > create new revision")
-	revision = NewRevision()
+	rev = NewRevision()
 
-	if err := r.createRevisionDir(revision); err != nil {
-		return false, fmt.Errorf("revision creation failed: %s", err)
+	if err := r.createRevisionDir(rev); err != nil {
+		return rev, fmt.Errorf("revision creation failed: %s", err)
 	}
 
 	fmt.Println(" > save upstream repomd.xml to disk")
-	if err := current.Save(r.getRevisionDir(revision) + repoXMLfile); err != nil {
-		return false, err
+	if err := current.Save(r.getRevisionDir(rev) + repoXMLfile); err != nil {
+		return rev, err
 	}
 
 	for _, v := range current.Data {
 		fmt.Println("  > ", v.Location.Path)
-		if err := h.HttpGetFile(r.RemoteURI+"/"+v.Location.Path, r.getRevisionDir(revision)+"/"+v.Location.Path); err != nil {
-			return false, err
+		if err := h.HttpGetFile(r.RemoteURI+"/"+v.Location.Path, r.getRevisionDir(rev)+"/"+v.Location.Path); err != nil {
+			return rev, err
 		}
 	}
 
-	return true, nil
-
+	r.getRevisionState()
+	return rev, err
 }
 
+// The getUpstreamMetadata method fetches a remote repomd.xml in memory
+// and returns a RepomdXML type.
 func (r *Repository) getUpstreamMetadata() (*repomd.RepomdXML, error) {
 	req, err := http.NewRequest("GET", r.RemoteURI+repoXMLfile, nil)
 	if err != nil {
@@ -186,14 +219,21 @@ func (r *Repository) getUpstreamMetadata() (*repomd.RepomdXML, error) {
 	return repomd.NewRepomdXML(resp.Body)
 }
 
+// The getLocalMetadata method returns a RepomdXML type from the repomd.xml on disk.
 func (r *Repository) getLocalMetadata(rev Revision) (*repomd.RepomdXML, error) {
 	f, err := os.Open(r.getRevisionDir(rev) + repoXMLfile)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-
 	return repomd.NewRepomdXML(f)
+}
+
+// The getPackages method downloads the upstream packages.
+// If packages are downloaded true will be returned, if not false.
+func (r *Repository) getPackages(rev Revision) (bool, error) {
+	fmt.Println(" > fetch packages for revision: " + rev.String())
+	return false, nil
 }
 
 // GetRegCode will return the regcode when set through an environment

@@ -29,6 +29,7 @@ type Cli struct {
 	cmdCreateRepoArg *string
 	cmdListRepoArg   *string
 	cmdUpdateRepoArg *string
+	cmdUpdateRevArg  *string
 	cmdDeleteRepoArg *string
 }
 
@@ -47,7 +48,8 @@ func NewCli() *Cli {
 
 	c.cmdCreateRepoArg = c.cmdCreate.Arg("repo name", "Repository name.").String()
 	c.cmdListRepoArg = c.cmdList.Arg("repo name", "Repository name.").String()
-	c.cmdUpdateRepoArg = c.cmdUpdate.Arg("repo name", "Repository name.").String()
+	c.cmdUpdateRepoArg = c.cmdUpdate.Arg("repo name", "Repository to update.").String()
+	c.cmdUpdateRevArg = c.cmdUpdate.Arg("revision", "Revision to update.").String()
 	c.cmdDeleteRepoArg = c.cmdDelete.Arg("repo name", "Repository name.").String()
 
 	return c
@@ -86,7 +88,7 @@ func (c *Cli) listCli() error {
 }
 
 func (c *Cli) updateCli() error {
-	c.app.Update(*c.cmdUpdateRepoArg)
+	c.app.Update(*c.cmdUpdateRepoArg, *c.cmdUpdateRevArg)
 	return nil
 }
 
