@@ -17,8 +17,6 @@ func NewRevision() Revision {
 // NewRevisionFromString takes a string as argument and returns a revision.
 func NewRevisionFromString(v string) (Revision, error) {
 	r, err := strconv.Atoi(v)
-	if err != nil {
-	}
 	return Revision(r), err
 }
 
