@@ -136,13 +136,8 @@ func (r *Repository) getMetadata() (bool, error) {
 
 	if ok {
 		fmt.Println(" > compare upstream repomd.xml with latest revision repomd.xml")
-		f, err := os.Open(r.getRevisionDir(revision) + repoXMLfile)
-		if err != nil {
-			return false, err
-		}
-		defer f.Close()
 
-		previous, err := repomd.NewRepomdXML(f)
+		previous, err := r.getLocalMetadata(revision)
 		if err != nil {
 			return false, err
 		}
@@ -189,6 +184,16 @@ func (r *Repository) getUpstreamMetadata() (*repomd.RepomdXML, error) {
 
 	defer resp.Body.Close()
 	return repomd.NewRepomdXML(resp.Body)
+}
+
+func (r *Repository) getLocalMetadata(rev Revision) (*repomd.RepomdXML, error) {
+	f, err := os.Open(r.getRevisionDir(rev) + repoXMLfile)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	return repomd.NewRepomdXML(f)
 }
 
 // GetRegCode will return the regcode when set through an environment
