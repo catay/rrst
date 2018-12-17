@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"compress/gzip"
 	"fmt"
 	"github.com/catay/rrst/config"
 	"github.com/catay/rrst/repository/repomd"
@@ -65,7 +66,10 @@ func (r *Repository) Update(rev string) (bool, error) {
 		}
 	}
 
-	r.getPackages(revision)
+	_, err = r.getPackages(revision)
+	if err != nil {
+		return false, err
+	}
 
 	fmt.Println(" > link revision to latest tag")
 	return true, nil
@@ -232,8 +236,51 @@ func (r *Repository) getLocalMetadata(rev Revision) (*repomd.RepomdXML, error) {
 // The getPackages method downloads the upstream packages.
 // If packages are downloaded true will be returned, if not false.
 func (r *Repository) getPackages(rev Revision) (bool, error) {
+
+	var primaryDataPath string
+
 	fmt.Println(" > fetch packages for revision: " + rev.String())
-	return false, nil
+
+	rm, err := r.getLocalMetadata(rev)
+	if err != nil {
+		return false, err
+	}
+
+	for _, v := range rm.Data {
+		if v.Type == "primary" {
+			primaryDataPath = r.getRevisionDir(rev) + "/" + v.Location.Path
+		}
+	}
+
+	f, err := os.Open(primaryDataPath)
+	if err != nil {
+		return false, err
+	}
+
+	uf, err := gzip.NewReader(f)
+	if err != nil {
+		return false, err
+	}
+
+	pm, err := repomd.NewPrimaryDataXML(uf)
+	if err != nil {
+		return false, err
+	}
+
+	if err := os.MkdirAll(r.ContentFilesPath, 0700); err != nil {
+		return false, err
+	}
+
+	fmt.Println(pm.Packages)
+
+	for _, v := range pm.Package {
+		fmt.Println("  >> " + v.Location.Path)
+		if err := h.HttpGetFile(r.RemoteURI+"/"+v.Location.Path, r.ContentFilesPath+"/"+v.Location.Path); err != nil {
+			return false, err
+		}
+	}
+
+	return true, err
 }
 
 // GetRegCode will return the regcode when set through an environment
