@@ -31,6 +31,20 @@ type repomdXMLDataCheckSum struct {
 	Value string `xml:",chardata"`
 }
 
+type PrimaryDataXML struct {
+	Packages string       `xml:"packages,attr"`
+	Package  []RpmPackage `xml:"package"`
+}
+
+type RpmPackage struct {
+	Type     string `xml:"type,attr"`
+	Name     string `xml:"name"`
+	Arch     string `xml:"arch"`
+	Location struct {
+		Path string `xml:"href,attr"`
+	} `xml:"location"`
+}
+
 // constructor
 
 func NewRepomdXML(r io.Reader) (*RepomdXML, error) {
@@ -60,6 +74,18 @@ func (rx *RepomdXML) Save(fname string) error {
 	return ioutil.WriteFile(fname, rx.data, 0644)
 }
 
-// private methods
+func NewPrimaryDataXML(r io.Reader) (*PrimaryDataXML, error) {
+	var err error
+	pm := &PrimaryDataXML{}
+	data, err := ioutil.ReadAll(r)
 
-// public methods
+	if err != nil {
+		return nil, err
+	}
+
+	if err := xml.Unmarshal(data, pm); err != nil {
+		return nil, err
+	}
+
+	return pm, nil
+}
