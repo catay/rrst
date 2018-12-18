@@ -11,7 +11,7 @@ import (
 	"os"
 	//	"github.com/catay/rrst/api/suse"
 	//	"github.com/catay/rrst/repomd"
-	//	"github.com/catay/rrst/util/file"
+	"github.com/catay/rrst/util/file"
 	//	"io"
 	//	"path/filepath"
 	//	"regexp"
@@ -284,12 +284,16 @@ func (r *Repository) getPackages(rev Revision) (bool, error) {
 	fmt.Println(pm.Packages)
 
 	for _, v := range pm.Package {
-		fmt.Println("  >> " + v.Location.Path)
-		if err := h.HttpGetFile(r.RemoteURI+"/"+v.Location.Path, r.ContentFilesPath+"/"+v.Location.Path); err != nil {
-			return false, err
+		if file.IsRegularFile(r.ContentFilesPath + "/" + v.Location.Path) {
+			fmt.Println("  >> " + v.Location.Path + "... already present")
+		} else {
+			if err := h.HttpGetFile(r.RemoteURI+"/"+v.Location.Path, r.ContentFilesPath+"/"+v.Location.Path); err != nil {
+				fmt.Println("  >> " + v.Location.Path + "... failed")
+				return false, err
+			}
+			fmt.Println("  >> " + v.Location.Path + "... done")
 		}
 	}
-
 	return true, err
 }
 
