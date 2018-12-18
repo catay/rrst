@@ -5,6 +5,7 @@ import (
 	"github.com/catay/rrst/config"
 	"github.com/catay/rrst/repository"
 	"os"
+	"text/tabwriter"
 )
 
 type App struct {
@@ -39,22 +40,15 @@ func (a *App) Create(action string) {
 }
 
 func (a *App) List(repo string) {
-
 	if len(a.repositories) == 0 {
 		fmt.Println("No repositories configured.")
 		return
 	}
 
 	if repo != "" {
-		if r, ok := a.getRepoName(repo); ok {
-			fmt.Println(r.Id, r.Name, r.ContentSuffixPath, len(r.Revisions))
-		} else {
-			fmt.Println("No configured repository", repo, "found.")
-		}
+		a.showRepo(repo)
 	} else {
-		for _, r := range a.repositories {
-			fmt.Println(r.Id, r.Name, r.ContentSuffixPath, len(r.Revisions))
-		}
+		a.showRepos()
 	}
 }
 
@@ -109,4 +103,46 @@ func (a *App) initContentPath() error {
 		return err
 	}
 	return nil
+}
+
+// The showRepo method prints detailed repository information to
+// standard ouptput of the specified repository when present.
+func (a *App) showRepo(repo string) error {
+	if r, ok := a.getRepoName(repo); ok {
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0)
+		fmt.Fprintf(w, "Id:\t%v\n", r.Id)
+		fmt.Fprintf(w, "Name:\t%v\n", r.Name)
+		fmt.Fprintf(w, "Type:\t%v\n", r.RType)
+		fmt.Fprintf(w, "Enabled:\t%v\n", r.Enabled)
+		fmt.Fprintf(w, "Vendor:\t%v\n", r.Vendor)
+		fmt.Fprintf(w, "Last update:\t%v\n", r.LastUpdated())
+		fmt.Fprintf(w, "Max revisions:\t%v\n", r.MaxRevisionsToKeep)
+		fmt.Fprintf(w, "Upstream:\t%v\n", r.RemoteURI)
+		if r.HasRevisions() {
+			fmt.Fprintf(w, "Revisions:\t%v  %v\n", r.Revisions[0], r.Revisions[0].Timestamp())
+			for _, v := range r.Revisions[1:] {
+				fmt.Fprintf(w, "\t%v  %v\n", v, v.Timestamp())
+			}
+		} else {
+			fmt.Fprintln(w, "Revisions:\tnone")
+		}
+		return w.Flush()
+
+	} else {
+		fmt.Println("No configured repository", repo, "found.")
+	}
+	return nil
+}
+
+// The showRepos method prints general repository information to
+// standard ouptput of all the configured repositories.
+func (a *App) showRepos() error {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0)
+	fmt.Fprintln(w, "id\trepo name\tenabled\t#revs\t#tags\tlast updated")
+	fmt.Fprintln(w, "--\t---------\t-------\t-----\t-----\t------------")
+
+	for _, r := range a.repositories {
+		fmt.Fprintf(w, "%v\t%v\t%v\t%v\t%v\t%v\n", r.Id, r.Name, r.Enabled, len(r.Revisions), 0, r.LastUpdated())
+	}
+	return w.Flush()
 }
