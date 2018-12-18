@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"time"
 	//	"github.com/catay/rrst/api/suse"
 	//	"github.com/catay/rrst/repomd"
 	//	"github.com/catay/rrst/util/file"
@@ -157,9 +156,7 @@ func (r *Repository) getLatestRevision() (Revision, bool) {
 func (r *Repository) LastUpdated() string {
 	rev, ok := r.getLatestRevision()
 	if ok {
-		year, month, day := time.Unix(int64(rev), 0).Date()
-		hour, min, sec := time.Unix(int64(rev), 0).Clock()
-		return fmt.Sprintf("%v-%d-%v %v:%v:%v", year, month, day, hour, min, sec)
+		return rev.Timestamp()
 	}
 	return "never"
 }
