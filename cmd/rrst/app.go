@@ -138,9 +138,7 @@ func (a *App) showRepo(repo string) error {
 // standard ouptput of all the configured repositories.
 func (a *App) showRepos() error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0)
-	fmt.Fprintln(w, "id\trepo name\tenabled\t#revs\t#tags\tlast updated")
-	fmt.Fprintln(w, "--\t---------\t-------\t-----\t-----\t------------")
-
+	fmt.Fprintln(w, "ID\tREPOSITORY\tENABLED\t#REVISIONS\t#TAGS\tUPDATED")
 	for _, r := range a.repositories {
 		fmt.Fprintf(w, "%v\t%v\t%v\t%v\t%v\t%v\n", r.Id, r.Name, r.Enabled, len(r.Revisions), 0, r.LastUpdated())
 	}
