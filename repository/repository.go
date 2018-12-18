@@ -102,9 +102,9 @@ func (r *Repository) getRevisionState() error {
 	return nil
 }
 
-// The hasRevisions returns true if there are revisions.
+// The HasRevisions returns true if there are revisions.
 // false if no revisions exist.
-func (r *Repository) hasRevisions() bool {
+func (r *Repository) HasRevisions() bool {
 	if len(r.Revisions) > 0 {
 		return true
 	}
@@ -141,7 +141,7 @@ func (r *Repository) createRevisionDir(rev Revision) error {
 func (r *Repository) getLatestRevision() (Revision, bool) {
 	var rev Revision
 	var ok bool
-	if r.hasRevisions() {
+	if r.HasRevisions() {
 		for _, v := range r.Revisions {
 			if v > rev {
 				rev = v
