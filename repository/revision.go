@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -23,4 +24,11 @@ func NewRevisionFromString(v string) (Revision, error) {
 // String returns the value as a string type.
 func (r Revision) String() string {
 	return strconv.Itoa(int(r))
+}
+
+// Timestamp returns a custom formatted date/time string.
+func (r Revision) Timestamp() string {
+	year, month, day := time.Unix(int64(r), 0).Date()
+	hour, min, sec := time.Unix(int64(r), 0).Clock()
+	return fmt.Sprintf("%v-%d-%v %v:%v:%v", year, month, day, hour, min, sec)
 }
