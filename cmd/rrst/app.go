@@ -129,21 +129,13 @@ func (a *App) initContentPath() error {
 func (a *App) showRepo(repo string) error {
 	if r, ok := a.getRepoName(repo); ok {
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0)
-		fmt.Fprintf(w, "Id:\t%v\n", r.Id)
-		fmt.Fprintf(w, "Name:\t%v\n", r.Name)
-		fmt.Fprintf(w, "Type:\t%v\n", r.RType)
-		fmt.Fprintf(w, "Enabled:\t%v\n", r.Enabled)
-		fmt.Fprintf(w, "Vendor:\t%v\n", r.Vendor)
-		fmt.Fprintf(w, "Last update:\t%v\n", r.LastUpdated())
-		fmt.Fprintf(w, "Max revisions:\t%v\n", r.MaxRevisionsToKeep)
-		fmt.Fprintf(w, "Upstream:\t%v\n", r.RemoteURI)
 		if r.HasRevisions() {
-			fmt.Fprintf(w, "Revisions:\t%v  %v  %v\n", r.Revisions[0], r.Revisions[0].Timestamp(), r.RevisionTags(r.Revisions[0]))
-			for _, v := range r.Revisions[1:] {
-				fmt.Fprintf(w, "\t%v  %v  %v\n", v, v.Timestamp(), r.RevisionTags(v))
+			fmt.Fprintln(w, "REVISIONS\tCREATED\tTAGS")
+			for _, v := range r.Revisions {
+				fmt.Fprintf(w, "%v\t%v\t%v\n", v, v.Timestamp(), r.RevisionTags(v))
 			}
 		} else {
-			fmt.Fprintln(w, "Revisions:\tnone")
+			fmt.Fprintln(w, "No revisions available for repository.", repo)
 		}
 		return w.Flush()
 
