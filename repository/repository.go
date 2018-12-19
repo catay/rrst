@@ -77,12 +77,51 @@ func (r *Repository) Update(rev string) (bool, error) {
 }
 
 // The Tag method creates a tag symlink to the specified revision.
-func (r *Repository) Tag(tag string, rev string) (bool, error) {
+func (r *Repository) Tag(tag string, rev string, force bool) (bool, error) {
+
+	// check if tag exists already, if not continue and create it when revision exists.
+	// tag exists and links already to the same revision, do nothing
+	// tag exists and links to another revision, give warning if force is not used and do nothing
+	// tag exists and links to another revision, and force is set, create tag when revision exists.
+
 	tagpath := r.ContentTagsPath + "/" + tag
+
+	// if tag exists and no revision is set,  delete tag
+	// if no revision is set and tag exists, delete it, if not, do nothing.
+	if rev == "" {
+		if r.isTag(tag) {
+			fmt.Printf("Remove tag %v from revision %v.\n", tag, r.tags[tag])
+			if err := os.Remove(tagpath); err != nil {
+				return false, err
+			}
+			return true, nil
+		} else {
+			return false, fmt.Errorf("No tag %v to remove.", tag)
+		}
+	}
+
 	revision, err := NewRevisionFromString(rev)
 
 	if !r.isRevision(revision) {
 		return false, fmt.Errorf("Not a valid or existing revision.")
+	}
+
+	// check if tag already exists
+	if r.isTag(tag) {
+		// check if tag already links to the same revision
+		if r.isTagRevision(tag, revision) {
+			return false, fmt.Errorf("Tag %v already links to revision %v.", tag, r.tags[tag])
+		} else {
+			if !force {
+				return false, fmt.Errorf("Tag %v already links to another revision %v. Use --force to override.", tag, r.tags[tag])
+			}
+			fmt.Printf("Tag change %v from revision %v to new revision %v.\n", tag, r.tags[tag], rev)
+			if err := os.Remove(tagpath); err != nil {
+				return false, err
+			}
+		}
+	} else {
+		fmt.Printf("Tag %v to revision %v.\n", tag, rev)
 	}
 
 	revpath := r.getRevisionDir(revision)
@@ -235,6 +274,22 @@ func (r *Repository) RevisionTags(rev Revision) []string {
 		}
 	}
 	return tags
+}
+
+// The isTag method returns true if a tag is already present, false when not.
+func (r *Repository) isTag(tag string) bool {
+	_, ok := r.tags[tag]
+	return ok
+}
+
+// The isTagRevision method returns true if a tag with the matching revision
+// exists, false when not.
+func (r *Repository) isTagRevision(tag string, rev Revision) bool {
+	revision, ok := r.tags[tag]
+	if ok && rev == revision {
+		return true
+	}
+	return false
 }
 
 // The getMetadata method downloads the repomd metadata when required and

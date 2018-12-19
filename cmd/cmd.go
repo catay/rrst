@@ -27,6 +27,7 @@ type Cli struct {
 	cmdUpdate        *kingpin.CmdClause
 	cmdTag           *kingpin.CmdClause
 	cmdDelete        *kingpin.CmdClause
+	cmdTagForceFlag  *bool
 	cmdCreateRepoArg *string
 	cmdListRepoArg   *string
 	cmdUpdateRepoArg *string
@@ -59,6 +60,7 @@ func NewCli() *Cli {
 	c.cmdTagRepoArg = c.cmdTag.Arg("repo name", "Repository name.").Required().String()
 	c.cmdTagTagArg = c.cmdTag.Arg("tag name", "Tag name.").Required().String()
 	c.cmdTagRevArg = c.cmdTag.Arg("revision", "Revision to tag.").String()
+	c.cmdTagForceFlag = c.cmdTag.Flag("force", "Force tag creation. Default is false.").Short('f').Bool()
 
 	c.cmdDeleteRepoArg = c.cmdDelete.Arg("repo name", "Repository name.").String()
 
@@ -105,7 +107,7 @@ func (c *Cli) updateCli() error {
 }
 
 func (c *Cli) tagCli() error {
-	c.app.Tag(*c.cmdTagRepoArg, *c.cmdTagTagArg, *c.cmdTagRevArg)
+	c.app.Tag(*c.cmdTagRepoArg, *c.cmdTagTagArg, *c.cmdTagRevArg, *c.cmdTagForceFlag)
 	return nil
 }
 

@@ -76,7 +76,7 @@ func (a *App) Update(repo string, rev string) {
 	}
 }
 
-func (a *App) Tag(repo string, tag string, rev string) {
+func (a *App) Tag(repo string, tag string, rev string, force bool) {
 	if len(a.repositories) == 0 {
 		fmt.Println("No repositories configured.")
 		return
@@ -85,7 +85,7 @@ func (a *App) Tag(repo string, tag string, rev string) {
 	if repo != "" {
 		if r, ok := a.getRepoName(repo); ok {
 			fmt.Printf("* Tag %s ...\n", r.Name)
-			_, err := r.Tag(tag, rev)
+			_, err := r.Tag(tag, rev, force)
 			if err != nil {
 				fmt.Println("tag error: ", err)
 			}
