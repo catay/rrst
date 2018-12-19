@@ -14,6 +14,7 @@ const (
 	DefaultContentFilesPathSuffix = "files"
 	DefaultContentMDPathSuffix    = "metadata"
 	DefaultContentTmpPathSuffix   = "tmp"
+	DefaultContentTagsPathSuffix  = "tags"
 	ContentPathEnv                = "RRST_CONTENT_PATH"
 )
 
@@ -44,6 +45,7 @@ type RepositoryConfig struct {
 	Enabled            bool     `yaml:"enabled"`
 	ContentFilesPath   string
 	ContentMDPath      string
+	ContentTagsPath    string
 	ContentTmpPath     string
 }
 
@@ -105,6 +107,7 @@ func (c *Config) SetRepositoryConfigDefaults() {
 
 		c.RepoConfigs[i].ContentFilesPath = c.GlobalConfig.ContentPath + "/" + DefaultContentFilesPathSuffix + "/" + r.ContentSuffixPath
 		c.RepoConfigs[i].ContentMDPath = c.GlobalConfig.ContentPath + "/" + DefaultContentMDPathSuffix + "/" + r.ContentSuffixPath
+		c.RepoConfigs[i].ContentTagsPath = c.GlobalConfig.ContentPath + "/" + DefaultContentTagsPathSuffix + "/" + r.ContentSuffixPath
 		c.RepoConfigs[i].ContentTmpPath = c.GlobalConfig.ContentPath + "/" + DefaultContentTmpPathSuffix + "/" + r.ContentSuffixPath
 	}
 }

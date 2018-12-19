@@ -25,11 +25,15 @@ type Cli struct {
 	cmdCreate        *kingpin.CmdClause
 	cmdList          *kingpin.CmdClause
 	cmdUpdate        *kingpin.CmdClause
+	cmdTag           *kingpin.CmdClause
 	cmdDelete        *kingpin.CmdClause
 	cmdCreateRepoArg *string
 	cmdListRepoArg   *string
 	cmdUpdateRepoArg *string
 	cmdUpdateRevArg  *string
+	cmdTagRepoArg    *string
+	cmdTagTagArg     *string
+	cmdTagRevArg     *string
 	cmdDeleteRepoArg *string
 }
 
@@ -44,12 +48,18 @@ func NewCli() *Cli {
 	c.cmdCreate = c.Command("create", "Create repositories and tags.")
 	c.cmdList = c.Command("list", "List repositories and tags.")
 	c.cmdUpdate = c.Command("update", "Update repositories and tags.")
+	c.cmdTag = c.Command("tag", "Tag repository revisions.")
 	c.cmdDelete = c.Command("delete", "Delete repositories and tags.")
 
 	c.cmdCreateRepoArg = c.cmdCreate.Arg("repo name", "Repository name.").String()
 	c.cmdListRepoArg = c.cmdList.Arg("repo name", "Repository name.").String()
 	c.cmdUpdateRepoArg = c.cmdUpdate.Arg("repo name", "Repository to update.").String()
 	c.cmdUpdateRevArg = c.cmdUpdate.Arg("revision", "Revision to update.").String()
+
+	c.cmdTagRepoArg = c.cmdTag.Arg("repo name", "Repository name.").Required().String()
+	c.cmdTagTagArg = c.cmdTag.Arg("tag name", "Tag name.").Required().String()
+	c.cmdTagRevArg = c.cmdTag.Arg("revision", "Revision to tag.").String()
+
 	c.cmdDeleteRepoArg = c.cmdDelete.Arg("repo name", "Repository name.").String()
 
 	return c
@@ -70,6 +80,8 @@ func (c *Cli) Run() error {
 		err = c.listCli()
 	case "update":
 		err = c.updateCli()
+	case "tag":
+		err = c.tagCli()
 	case "delete":
 		err = c.deleteCli()
 	}
@@ -89,6 +101,11 @@ func (c *Cli) listCli() error {
 
 func (c *Cli) updateCli() error {
 	c.app.Update(*c.cmdUpdateRepoArg, *c.cmdUpdateRevArg)
+	return nil
+}
+
+func (c *Cli) tagCli() error {
+	c.app.Tag(*c.cmdTagRepoArg, *c.cmdTagTagArg, *c.cmdTagRevArg)
 	return nil
 }
 

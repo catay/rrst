@@ -76,6 +76,25 @@ func (a *App) Update(repo string, rev string) {
 	}
 }
 
+func (a *App) Tag(repo string, tag string, rev string) {
+	if len(a.repositories) == 0 {
+		fmt.Println("No repositories configured.")
+		return
+	}
+
+	if repo != "" {
+		if r, ok := a.getRepoName(repo); ok {
+			fmt.Printf("* Tag %s ...\n", r.Name)
+			_, err := r.Tag(tag, rev)
+			if err != nil {
+				fmt.Println("tag error: ", err)
+			}
+		} else {
+			fmt.Println("No configured repository", repo, "found.")
+		}
+	}
+}
+
 func (a *App) Delete(action string) {
 	fmt.Println(action)
 }
@@ -119,9 +138,9 @@ func (a *App) showRepo(repo string) error {
 		fmt.Fprintf(w, "Max revisions:\t%v\n", r.MaxRevisionsToKeep)
 		fmt.Fprintf(w, "Upstream:\t%v\n", r.RemoteURI)
 		if r.HasRevisions() {
-			fmt.Fprintf(w, "Revisions:\t%v  %v\n", r.Revisions[0], r.Revisions[0].Timestamp())
+			fmt.Fprintf(w, "Revisions:\t%v  %v  %v\n", r.Revisions[0], r.Revisions[0].Timestamp(), r.RevisionTags(r.Revisions[0]))
 			for _, v := range r.Revisions[1:] {
-				fmt.Fprintf(w, "\t%v  %v\n", v, v.Timestamp())
+				fmt.Fprintf(w, "\t%v  %v  %v\n", v, v.Timestamp(), r.RevisionTags(v))
 			}
 		} else {
 			fmt.Fprintln(w, "Revisions:\tnone")
@@ -140,7 +159,7 @@ func (a *App) showRepos() error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0)
 	fmt.Fprintln(w, "ID\tREPOSITORY\tENABLED\t#REVISIONS\t#TAGS\tUPDATED")
 	for _, r := range a.repositories {
-		fmt.Fprintf(w, "%v\t%v\t%v\t%v\t%v\t%v\n", r.Id, r.Name, r.Enabled, len(r.Revisions), 0, r.LastUpdated())
+		fmt.Fprintf(w, "%v\t%v\t%v\t%v\t%v\t%v\n", r.Id, r.Name, r.Enabled, len(r.Revisions), len(r.Tags()), r.LastUpdated())
 	}
 	return w.Flush()
 }

@@ -13,7 +13,7 @@ import (
 	//	"github.com/catay/rrst/repomd"
 	"github.com/catay/rrst/util/file"
 	//	"io"
-	//	"path/filepath"
+	"path/filepath"
 	//	"regexp"
 	//	"strings"
 )
@@ -27,6 +27,7 @@ const (
 type Repository struct {
 	*config.RepositoryConfig
 	Revisions []Revision
+	tags      map[string]Revision
 	//secret      string
 	//topLevelDir string
 	//metadata    *repomd.Repomd
@@ -75,9 +76,32 @@ func (r *Repository) Update(rev string) (bool, error) {
 	return true, nil
 }
 
+// The Tag method creates a tag symlink to the specified revision.
+func (r *Repository) Tag(tag string, rev string) (bool, error) {
+	tagpath := r.ContentTagsPath + "/" + tag
+	revision, err := NewRevisionFromString(rev)
+
+	if !r.isRevision(revision) {
+		return false, fmt.Errorf("Not a valid or existing revision.")
+	}
+
+	revpath := r.getRevisionDir(revision)
+
+	if err := os.MkdirAll(r.ContentTagsPath, 0700); err != nil {
+		return false, err
+	}
+
+	if err := os.Symlink(revpath, tagpath); err != nil {
+		return false, err
+	}
+
+	return true, err
+}
+
 // The getState method updates the data structures with the state on disk.
 func (r *Repository) getState() error {
 	r.getRevisionState()
+	r.getTagState()
 	return nil
 }
 
@@ -99,6 +123,31 @@ func (r *Repository) getRevisionState() error {
 		}
 	}
 	return nil
+}
+
+func (r *Repository) getTagState() error {
+	files, err := ioutil.ReadDir(r.ContentTagsPath)
+	r.tags = make(map[string]Revision)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range files {
+		if v.Mode()&os.ModeSymlink != 0 {
+			tagpath := r.ContentTagsPath + "/" + v.Name()
+			revpath, err := filepath.EvalSymlinks(tagpath)
+			if err != nil {
+				return err
+			}
+
+			rev, err := NewRevisionFromString(filepath.Base(revpath))
+			if err == nil {
+				r.tags[v.Name()] = rev
+			}
+		}
+	}
+
+	return err
 }
 
 // The HasRevisions returns true if there are revisions.
@@ -165,6 +214,27 @@ func (r *Repository) LastUpdated() string {
 func (r *Repository) getRevisionDir(rev Revision) string {
 	revisionDir := r.ContentMDPath + "/" + rev.String()
 	return revisionDir
+}
+
+// The Tags method returns a slice with all tags for all revision.
+func (r *Repository) Tags() []string {
+	var tags []string
+	for t, _ := range r.tags {
+		tags = append(tags, t)
+	}
+	return tags
+}
+
+// The RevisionTags method returns a slice with all tags for a specific
+// revision.
+func (r *Repository) RevisionTags(rev Revision) []string {
+	var tags []string
+	for t, v := range r.tags {
+		if v == rev {
+			tags = append(tags, t)
+		}
+	}
+	return tags
 }
 
 // The getMetadata method downloads the repomd metadata when required and
