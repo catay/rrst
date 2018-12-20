@@ -72,13 +72,18 @@ func (r *Repository) Update(rev string) (bool, error) {
 		return false, err
 	}
 
+	r.getState()
+
 	fmt.Println(" > link revision to latest tag")
+	if r.isLatestRevision(revision) {
+		return r.Tag("latest", revision.String(), true)
+	}
+
 	return true, nil
 }
 
 // The Tag method creates a tag symlink to the specified revision.
 func (r *Repository) Tag(tag string, rev string, force bool) (bool, error) {
-
 	// check if tag exists already, if not continue and create it when revision exists.
 	// tag exists and links already to the same revision, do nothing
 	// tag exists and links to another revision, give warning if force is not used and do nothing
@@ -96,7 +101,8 @@ func (r *Repository) Tag(tag string, rev string, force bool) (bool, error) {
 			}
 			return true, nil
 		} else {
-			return false, fmt.Errorf("No tag %v to remove.", tag)
+			fmt.Printf("No tag %v to remove.\n", tag)
+			return false, nil
 		}
 	}
 
@@ -110,10 +116,12 @@ func (r *Repository) Tag(tag string, rev string, force bool) (bool, error) {
 	if r.isTag(tag) {
 		// check if tag already links to the same revision
 		if r.isTagRevision(tag, revision) {
-			return false, fmt.Errorf("Tag %v already links to revision %v.", tag, r.tags[tag])
+			fmt.Printf("Tag %v already links to revision %v.\n", tag, r.tags[tag])
+			return false, nil
 		} else {
 			if !force {
-				return false, fmt.Errorf("Tag %v already links to another revision %v. Use --force to override.", tag, r.tags[tag])
+				fmt.Printf("Tag %v already links to another revision %v. Use --force to override.\n", tag, r.tags[tag])
+				return false, nil
 			}
 			fmt.Printf("Tag change %v from revision %v to new revision %v.\n", tag, r.tags[tag], rev)
 			if err := os.Remove(tagpath); err != nil {
@@ -237,6 +245,15 @@ func (r *Repository) getLatestRevision() (Revision, bool) {
 		}
 	}
 	return rev, ok
+}
+
+// The isLatestRevision returns true when it's the latest revision.
+func (r *Repository) isLatestRevision(rev Revision) bool {
+	revision, ok := r.getLatestRevision()
+	if ok && rev == revision {
+		return true
+	}
+	return false
 }
 
 // The LastUpdated method returns a custom formatted date string of the
