@@ -5,6 +5,7 @@ import (
 	"github.com/catay/rrst/config"
 	"github.com/catay/rrst/repository"
 	"os"
+	"strings"
 	"text/tabwriter"
 )
 
@@ -52,7 +53,7 @@ func (a *App) List(repo string) {
 	}
 }
 
-func (a *App) Update(repo string, rev string) {
+func (a *App) Update(repo string, rev int64) {
 	if len(a.repositories) == 0 {
 		fmt.Println("No repositories configured.")
 		return
@@ -76,7 +77,7 @@ func (a *App) Update(repo string, rev string) {
 	}
 }
 
-func (a *App) Tag(repo string, tag string, rev string, force bool) {
+func (a *App) Tag(repo string, tag string, rev int64, force bool) {
 	if len(a.repositories) == 0 {
 		fmt.Println("No repositories configured.")
 		return
@@ -132,15 +133,15 @@ func (a *App) showRepo(repo string) error {
 		if r.HasRevisions() {
 			fmt.Fprintln(w, "REVISIONS\tCREATED\tTAGS")
 			for _, v := range r.Revisions {
-				fmt.Fprintf(w, "%v\t%v\t%v\n", v, v.Timestamp(), r.RevisionTags(v))
+				fmt.Fprintf(w, "%v\t%v\t%v\n", v.Id, v.Timestamp(), strings.Join(v.TagNames(), ", "))
 			}
 		} else {
-			fmt.Fprintln(w, "No revisions available for repository.", repo)
+			fmt.Fprintf(w, "No revisions available for repository %v\n.", repo)
 		}
 		return w.Flush()
 
 	} else {
-		fmt.Println("No configured repository", repo, "found.")
+		fmt.Printf("Repository '%v' not found.\n", repo)
 	}
 	return nil
 }
@@ -151,7 +152,7 @@ func (a *App) showRepos() error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0)
 	fmt.Fprintln(w, "ID\tREPOSITORY\tENABLED\t#REVISIONS\t#TAGS\tUPDATED")
 	for _, r := range a.repositories {
-		fmt.Fprintf(w, "%v\t%v\t%v\t%v\t%v\t%v\n", r.Id, r.Name, r.Enabled, len(r.Revisions), len(r.Tags()), r.LastUpdated())
+		fmt.Fprintf(w, "%v\t%v\t%v\t%v\t%v\t%v\n", r.Id, r.Name, r.Enabled, len(r.Revisions), len(r.Tags), r.LastUpdated())
 	}
 	return w.Flush()
 }

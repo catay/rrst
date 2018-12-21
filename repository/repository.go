@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	//	"github.com/catay/rrst/api/suse"
 	//	"github.com/catay/rrst/repomd"
 	"github.com/catay/rrst/util/file"
@@ -26,8 +27,8 @@ const (
 // Repository data model.
 type Repository struct {
 	*config.RepositoryConfig
-	Revisions []Revision
-	tags      map[string]Revision
+	Revisions []*Revision
+	Tags      []*Tag
 	//secret      string
 	//topLevelDir string
 	//metadata    *repomd.Repomd
@@ -39,29 +40,25 @@ func NewRepository(repoConfig *config.RepositoryConfig) (r *Repository) {
 		RepositoryConfig: repoConfig,
 	}
 
-	r.getState()
+	r.initState()
 	return r
 }
 
 // The Update method fetches the metadata and packages from upstream and
 // stores it locally.
-func (r *Repository) Update(rev string) (bool, error) {
-	var revision Revision
+func (r *Repository) Update(rev int64) (bool, error) {
+	var revision *Revision
 	var err error
 
 	// If revision not set, new metadata has to be fetched and will set the revision
 	// If revision set, metadata should already be there
-	if rev == "" {
+	if rev == 0 {
 		revision, err = r.getMetadata()
 		if err != nil {
 			return false, err
 		}
 	} else {
-		revision, err = NewRevisionFromString(rev)
-		if err != nil {
-			return false, err
-		}
-
+		revision = NewRevisionFromId(rev)
 		if !r.isRevision(revision) {
 			return false, fmt.Errorf("Not a valid or existing revision.")
 		}
@@ -72,129 +69,137 @@ func (r *Repository) Update(rev string) (bool, error) {
 		return false, err
 	}
 
-	r.getState()
+	r.initState()
 
-	fmt.Println(" > link revision to latest tag")
 	if r.isLatestRevision(revision) {
-		return r.Tag("latest", revision.String(), true)
+		fmt.Println(" > link revision to latest tag")
+		return r.Tag("latest", revision.Id, true)
 	}
 
 	return true, nil
 }
 
 // The Tag method creates a tag symlink to the specified revision.
-func (r *Repository) Tag(tag string, rev string, force bool) (bool, error) {
-	// check if tag exists already, if not continue and create it when revision exists.
-	// tag exists and links already to the same revision, do nothing
-	// tag exists and links to another revision, give warning if force is not used and do nothing
-	// tag exists and links to another revision, and force is set, create tag when revision exists.
-
-	tagpath := r.ContentTagsPath + "/" + tag
-
-	// if tag exists and no revision is set,  delete tag
-	// if no revision is set and tag exists, delete it, if not, do nothing.
-	if rev == "" {
-		if r.isTag(tag) {
-			fmt.Printf("Remove tag %v from revision %v.\n", tag, r.tags[tag])
-			if err := os.Remove(tagpath); err != nil {
-				return false, err
-			}
-			return true, nil
-		} else {
-			fmt.Printf("No tag %v to remove.\n", tag)
-			return false, nil
-		}
+// FIXME: add tag delete functionality.
+func (r *Repository) Tag(tagname string, revid int64, force bool) (bool, error) {
+	// Check if there is a matching revision with the give revid.
+	// If not, bail out.
+	rev := r.revisionById(revid)
+	if rev == nil {
+		return false, fmt.Errorf("Revision %v not found.", revid)
 	}
 
-	revision, err := NewRevisionFromString(rev)
-
-	if !r.isRevision(revision) {
-		return false, fmt.Errorf("Not a valid or existing revision.")
-	}
-
-	// check if tag already exists
-	if r.isTag(tag) {
-		// check if tag already links to the same revision
-		if r.isTagRevision(tag, revision) {
-			fmt.Printf("Tag %v already links to revision %v.\n", tag, r.tags[tag])
-			return false, nil
-		} else {
-			if !force {
-				fmt.Printf("Tag %v already links to another revision %v. Use --force to override.\n", tag, r.tags[tag])
-				return false, nil
-			}
-			fmt.Printf("Tag change %v from revision %v to new revision %v.\n", tag, r.tags[tag], rev)
-			if err := os.Remove(tagpath); err != nil {
-				return false, err
-			}
-		}
-	} else {
-		fmt.Printf("Tag %v to revision %v.\n", tag, rev)
-	}
-
-	revpath := r.getRevisionDir(revision)
+	tagpath := r.ContentTagsPath + "/" + tagname
+	revpath := r.getRevisionDir(rev)
 
 	if err := os.MkdirAll(r.ContentTagsPath, 0700); err != nil {
 		return false, err
+	}
+
+	// check if tag already exists, if not, create the tag symlink.
+	tag := r.tagByName(tagname)
+	if tag == nil {
+		fmt.Printf("Add new tag %v with revision %v\n", tagname, revid)
+		r.addTag(NewTag(tagname, rev))
+	} else {
+		if tag.Revision.Id == rev.Id {
+			fmt.Printf("Tag %v already links to revision %v.\n", tag.Name, tag.Revision.Id)
+			return false, nil
+		} else {
+			fmt.Printf("Update tag %v with revision %v to revision %v.\n", tag.Name, tag.Revision.Id, rev.Id)
+			if err := os.Remove(tagpath); err != nil {
+				return false, err
+			}
+			tag.SetRevision(rev)
+		}
 	}
 
 	if err := os.Symlink(revpath, tagpath); err != nil {
 		return false, err
 	}
 
-	return true, err
+	return true, nil
 }
 
-// The getState method updates the data structures with the state on disk.
-func (r *Repository) getState() error {
-	r.getRevisionState()
-	r.getTagState()
+// The initState method updates the data structures with the state on disk.
+// FIXME: probably best to panic in case those return an error. That would
+// mean the state under the content path is corrupted.
+func (r *Repository) initState() error {
+	r.initRevisionState()
+	r.initTagState()
 	return nil
 }
 
-// getRevisionState fetches all revision directories of the metadata dir.
+// initRevisionState fetches all revision directories of the metadata dir.
 // FIXME: add extra check to make sure there is a repomd.xml file in the tag dir.
 // FIXME: also make sure only tags get added with correct pattern.
-func (r *Repository) getRevisionState() error {
-	files, err := ioutil.ReadDir(r.ContentMDPath)
+func (r *Repository) initRevisionState() error {
+	revIds, err := r.getRevIdsFromPath()
 	if err != nil {
 		return err
+	}
+
+	for _, id := range revIds {
+		r.addRevision(NewRevisionFromId(id))
+	}
+
+	return err
+}
+
+// addRevision adds Revision to the repository revision list.
+// Returns true when added, false when not added.
+func (r *Repository) addRevision(rev *Revision) bool {
+	return r.appendRevisionIfMissing(rev)
+}
+
+// appendRevisionIfMissing is a helper method and will only append a
+// Revision to the repository revision list  when not present.
+// Returns true when added, false when not added.
+func (r *Repository) appendRevisionIfMissing(rev *Revision) bool {
+	missing := true
+	for _, t := range r.Revisions {
+		if rev.Id == t.Id {
+			missing = false
+		}
+	}
+
+	if missing {
+		r.Revisions = append(r.Revisions, rev)
+	}
+
+	return missing
+}
+
+// getRevIdsFromPath reads all revision id's from the filesystem and
+// returns it as an array.
+func (r *Repository) getRevIdsFromPath() ([]int64, error) {
+	var revIds []int64
+	files, err := ioutil.ReadDir(r.ContentMDPath)
+	if err != nil {
+		return revIds, err
 	}
 
 	for _, v := range files {
 		if v.IsDir() {
-			rev, err := NewRevisionFromString(v.Name())
-			if err == nil {
-				r.Revisions = append(r.Revisions, rev)
+			revid, err := strconv.Atoi(v.Name())
+			if err != nil {
+				return revIds, err
 			}
+			revIds = append(revIds, int64(revid))
+		}
+	}
+	return revIds, err
+}
+
+// revisionById returns a Revision with the matchin revision id.
+// The returned Revision will be nil when not found.
+func (r *Repository) revisionById(id int64) *Revision {
+	for i, v := range r.Revisions {
+		if v.Id == id {
+			return r.Revisions[i]
 		}
 	}
 	return nil
-}
-
-func (r *Repository) getTagState() error {
-	files, err := ioutil.ReadDir(r.ContentTagsPath)
-	r.tags = make(map[string]Revision)
-	if err != nil {
-		return err
-	}
-
-	for _, v := range files {
-		if v.Mode()&os.ModeSymlink != 0 {
-			tagpath := r.ContentTagsPath + "/" + v.Name()
-			revpath, err := filepath.EvalSymlinks(tagpath)
-			if err != nil {
-				return err
-			}
-
-			rev, err := NewRevisionFromString(filepath.Base(revpath))
-			if err == nil {
-				r.tags[v.Name()] = rev
-			}
-		}
-	}
-
-	return err
 }
 
 // The HasRevisions returns true if there are revisions.
@@ -208,9 +213,9 @@ func (r *Repository) HasRevisions() bool {
 
 // The isRevision method returns true if revision exists,
 // false if revision doesn't exist.
-func (r *Repository) isRevision(rev Revision) bool {
+func (r *Repository) isRevision(rev *Revision) bool {
 	for _, v := range r.Revisions {
-		if v == rev {
+		if v.Id == rev.Id {
 			return true
 		}
 	}
@@ -218,42 +223,109 @@ func (r *Repository) isRevision(rev Revision) bool {
 	return false
 }
 
-// The createRevisionDir method creates the revision directory under
-// the metadata structure.
-func (r *Repository) createRevisionDir(rev Revision) error {
-	revisionDir := r.getRevisionDir(rev) + "/repodata"
-
-	if err := os.MkdirAll(revisionDir, 0700); err != nil {
-		return err
-	}
-
-	return nil
+// The getRevisionDir method returns the full revision directory path.
+func (r *Repository) getRevisionDir(rev *Revision) string {
+	revisionDir := r.ContentMDPath + "/" + fmt.Sprintf("%v", rev.Id)
+	return revisionDir
 }
 
 // The getLatestRevision returns the most recent revision and a bool set
 // to true if found. If not found it returns an empty revision and a bool
 // set to false.
-func (r *Repository) getLatestRevision() (Revision, bool) {
-	var rev Revision
+func (r *Repository) getLatestRevision() (*Revision, bool) {
+	var index int
+	var id int64
 	var ok bool
 	if r.HasRevisions() {
-		for _, v := range r.Revisions {
-			if v > rev {
-				rev = v
+		for i, v := range r.Revisions {
+			if v.Id > id {
+				index = i
+				id = v.Id
 				ok = true
 			}
 		}
+		return r.Revisions[index], ok
 	}
-	return rev, ok
+	return nil, ok
 }
 
 // The isLatestRevision returns true when it's the latest revision.
-func (r *Repository) isLatestRevision(rev Revision) bool {
+func (r *Repository) isLatestRevision(rev *Revision) bool {
 	revision, ok := r.getLatestRevision()
-	if ok && rev == revision {
+	if ok && rev.Id == revision.Id {
 		return true
 	}
 	return false
+}
+
+// The createRevisionDir method creates the revision directory under
+// the metadata structure.
+func (r *Repository) createRevisionDir(rev *Revision) error {
+	revisionDir := r.getRevisionDir(rev) + "/repodata"
+
+	if err := os.MkdirAll(revisionDir, 0700); err != nil {
+		return err
+	}
+	return nil
+}
+
+// initTagState initializes the tag state from the filesystem.
+func (r *Repository) initTagState() error {
+	files, err := ioutil.ReadDir(r.ContentTagsPath)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range files {
+		if v.Mode()&os.ModeSymlink != 0 {
+			tagpath := r.ContentTagsPath + "/" + v.Name()
+			revpath, err := filepath.EvalSymlinks(tagpath)
+			if err != nil {
+				return err
+			}
+
+			i, err := strconv.Atoi(filepath.Base(revpath))
+			if err != nil {
+				return err
+			}
+			rev := r.revisionById(int64(i))
+			r.addTag(NewTag(v.Name(), rev))
+		}
+	}
+	return err
+}
+
+// addTag adds a Tag to the repository Tag list.
+// A boolean will return true when added, false when not.
+func (r *Repository) addTag(tag *Tag) bool {
+	return r.appendTagIfMissing(tag)
+}
+
+// appendTagIfMissing is a helper method and will only append a Tag when
+// not present already. Returns true when added, false when not added.
+func (r *Repository) appendTagIfMissing(tag *Tag) bool {
+	missing := true
+	for _, t := range r.Tags {
+		if tag.Name == t.Name {
+			missing = false
+		}
+	}
+
+	if missing {
+		r.Tags = append(r.Tags, tag)
+	}
+	return missing
+}
+
+// tagByName returns a Tag with a matching tag name.
+// The returned Tag will be nil if not found.
+func (r *Repository) tagByName(tagname string) *Tag {
+	for i, v := range r.Tags {
+		if v.Name == tagname {
+			return r.Tags[i]
+		}
+	}
+	return nil
 }
 
 // The LastUpdated method returns a custom formatted date string of the
@@ -266,52 +338,18 @@ func (r *Repository) LastUpdated() string {
 	return "never"
 }
 
-// The getRevisionDir method returns the full revision directory path.
-func (r *Repository) getRevisionDir(rev Revision) string {
-	revisionDir := r.ContentMDPath + "/" + rev.String()
-	return revisionDir
-}
-
-// The Tags method returns a slice with all tags for all revision.
-func (r *Repository) Tags() []string {
-	var tags []string
-	for t, _ := range r.tags {
-		tags = append(tags, t)
-	}
-	return tags
-}
-
-// The RevisionTags method returns a slice with all tags for a specific
-// revision.
-func (r *Repository) RevisionTags(rev Revision) []string {
-	var tags []string
-	for t, v := range r.tags {
-		if v == rev {
-			tags = append(tags, t)
-		}
-	}
-	return tags
-}
-
 // The isTag method returns true if a tag is already present, false when not.
-func (r *Repository) isTag(tag string) bool {
-	_, ok := r.tags[tag]
-	return ok
-}
-
-// The isTagRevision method returns true if a tag with the matching revision
-// exists, false when not.
-func (r *Repository) isTagRevision(tag string, rev Revision) bool {
-	revision, ok := r.tags[tag]
-	if ok && rev == revision {
-		return true
+func (r *Repository) isTag(tagname string) bool {
+	tag := r.tagByName(tagname)
+	if tag == nil {
+		return false
 	}
-	return false
+	return true
 }
 
 // The getMetadata method downloads the repomd metadata when required and
 // returns the matching revision.
-func (r *Repository) getMetadata() (Revision, error) {
+func (r *Repository) getMetadata() (*Revision, error) {
 	rev, ok := r.getLatestRevision()
 
 	fmt.Println(" > fetch upstream repomd.xml in memory")
@@ -354,7 +392,7 @@ func (r *Repository) getMetadata() (Revision, error) {
 		}
 	}
 
-	r.getRevisionState()
+	r.initRevisionState()
 	return rev, err
 }
 
@@ -376,7 +414,7 @@ func (r *Repository) getUpstreamMetadata() (*repomd.RepomdXML, error) {
 }
 
 // The getLocalMetadata method returns a RepomdXML type from the repomd.xml on disk.
-func (r *Repository) getLocalMetadata(rev Revision) (*repomd.RepomdXML, error) {
+func (r *Repository) getLocalMetadata(rev *Revision) (*repomd.RepomdXML, error) {
 	f, err := os.Open(r.getRevisionDir(rev) + repoXMLfile)
 	if err != nil {
 		return nil, err
@@ -387,11 +425,11 @@ func (r *Repository) getLocalMetadata(rev Revision) (*repomd.RepomdXML, error) {
 
 // The getPackages method downloads the upstream packages.
 // If packages are downloaded true will be returned, if not false.
-func (r *Repository) getPackages(rev Revision) (bool, error) {
+func (r *Repository) getPackages(rev *Revision) (bool, error) {
 
 	var primaryDataPath string
 
-	fmt.Println(" > fetch packages for revision: " + rev.String())
+	fmt.Printf(" > fetch packages for revision: %v\n", rev.Id)
 
 	rm, err := r.getLocalMetadata(rev)
 	if err != nil {

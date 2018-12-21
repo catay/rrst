@@ -31,10 +31,10 @@ type Cli struct {
 	cmdCreateRepoArg *string
 	cmdListRepoArg   *string
 	cmdUpdateRepoArg *string
-	cmdUpdateRevArg  *string
+	cmdUpdateRevArg  *int64
 	cmdTagRepoArg    *string
 	cmdTagTagArg     *string
-	cmdTagRevArg     *string
+	cmdTagRevArg     *int64
 	cmdDeleteRepoArg *string
 }
 
@@ -55,11 +55,11 @@ func NewCli() *Cli {
 	c.cmdCreateRepoArg = c.cmdCreate.Arg("repo name", "Repository name.").String()
 	c.cmdListRepoArg = c.cmdList.Arg("repo name", "Repository name.").String()
 	c.cmdUpdateRepoArg = c.cmdUpdate.Arg("repo name", "Repository to update.").String()
-	c.cmdUpdateRevArg = c.cmdUpdate.Arg("revision", "Revision to update.").String()
+	c.cmdUpdateRevArg = c.cmdUpdate.Arg("revision", "Revision to update.").Int64()
 
 	c.cmdTagRepoArg = c.cmdTag.Arg("repo name", "Repository name.").Required().String()
 	c.cmdTagTagArg = c.cmdTag.Arg("tag name", "Tag name.").Required().String()
-	c.cmdTagRevArg = c.cmdTag.Arg("revision", "Revision to tag.").String()
+	c.cmdTagRevArg = c.cmdTag.Arg("revision", "Revision to tag.").Int64()
 	c.cmdTagForceFlag = c.cmdTag.Flag("force", "Force tag creation. Default is false.").Short('f').Bool()
 
 	c.cmdDeleteRepoArg = c.cmdDelete.Arg("repo name", "Repository name.").String()
