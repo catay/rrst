@@ -1,18 +1,11 @@
 package cmd
 
 import (
-	//"fmt"
 	"github.com/catay/rrst/cmd/rrst"
+	"github.com/catay/rrst/version"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"os"
 	"path/filepath"
-)
-
-// the version string will be injected during the build.
-var Version = "0.0.0"
-
-const (
-	author = "Steven Mertens <steven.mertens@catay.be>"
 )
 
 type Cli struct {
@@ -41,8 +34,8 @@ func NewCli() *Cli {
 	c := &Cli{
 		Application: kingpin.New(filepath.Base(os.Args[0]), "Remote Repository Sync Tool"),
 	}
-	c.Version(Version)
-	c.Author(author)
+	c.Version(version.Version)
+	c.Author(version.Author)
 	c.configFile = c.Flag("config", "Path to alternate YAML configuration file.").Short('c').Default(app.DefaultConfig).String()
 	c.verbose = c.Flag("verbose", "Turn on verbose output. Default is verbose turned off.").Short('v').Bool()
 	c.cmdCreate = c.Command("create", "Create custom repositories. **NOT IMPLEMENTED**")
