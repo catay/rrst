@@ -9,6 +9,10 @@ import (
 	"text/tabwriter"
 )
 
+const (
+	DefaultConfig = config.DefaultConfigPath
+)
+
 type App struct {
 	config       *config.Config
 	repositories []*repository.Repository

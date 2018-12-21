@@ -11,8 +11,7 @@ import (
 var Version = "0.0.0"
 
 const (
-	author        = "Steven Mertens <steven.mertens@catay.be>"
-	defaultConfig = "/etc/rsst.yaml"
+	author = "Steven Mertens <steven.mertens@catay.be>"
 )
 
 type Cli struct {
@@ -28,7 +27,7 @@ func NewCli() *Cli {
 	}
 	c.Version(Version)
 	c.Author(author)
-	c.configFile = c.Flag("config", "Path to alternate YAML configuration file.").Short('c').Default(defaultConfig).String()
+	c.configFile = c.Flag("config", "Path to alternate YAML configuration file.").Short('c').Default(app.DefaultConfig).String()
 	c.verbose = c.Flag("verbose", "Turn on verbose output. Default is verbose turned off.").Short('v').Bool()
 	return c
 }

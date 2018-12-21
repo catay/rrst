@@ -9,6 +9,7 @@ import (
 
 // Default configuration values.
 const (
+	DefaultConfigPath             = "/etc/rrst.yaml"
 	DefaultContentPath            = "~/.rrst/content"
 	DefaultMaxRevisionsToKeep     = 50
 	DefaultContentFilesPathSuffix = "files"

@@ -9,6 +9,10 @@ import (
 	"os"
 )
 
+const (
+	DefaultConfig = config.DefaultConfigPath
+)
+
 type App struct {
 	config       *config.Config
 	repositories []*repository.Repository
