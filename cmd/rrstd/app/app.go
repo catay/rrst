@@ -35,7 +35,7 @@ func (a *App) Server() error {
 	fmt.Println("Start server")
 	for _, r := range a.repositories {
 
-		if len(r.Revisions) != 0 && r.Enabled {
+		if len(r.Tags) != 0 && r.Enabled {
 			fmt.Println("* start handler for repo", r.Name)
 			for _, t := range r.Tags {
 				fmt.Println("  > tag: ", t.Name)
