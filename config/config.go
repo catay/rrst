@@ -9,6 +9,7 @@ import (
 
 // Default configuration values.
 const (
+	ValidTagsRegex                = "^[a-z|A-Z|0-9|_]+$"
 	DefaultConfigPath             = "/etc/rrst.yaml"
 	DefaultServerPort             = "4280"
 	DefaultContentPath            = "~/.rrst/content"

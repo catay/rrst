@@ -15,7 +15,7 @@ import (
 	"github.com/catay/rrst/util/file"
 	//	"io"
 	"path/filepath"
-	//	"regexp"
+	"regexp"
 	//	"strings"
 )
 
@@ -87,6 +87,12 @@ func (r *Repository) Update(rev int64) (bool, error) {
 // The Tag method creates a tag symlink to the specified revision.
 // FIXME: add tag delete functionality.
 func (r *Repository) Tag(tagname string, revid int64, force bool) (bool, error) {
+	// Check if the tag name is valid.
+	// A tag name can only contain lowercase and uppercase letters, digits and underscores.
+	if !r.isValidTagName(tagname) {
+		return false, fmt.Errorf("Tag %v not valid, only letters, digits and underscores allowed.", tagname)
+	}
+
 	// Check if there is a matching revision with the give revid.
 	// If not, bail out.
 	rev := r.revisionById(revid)
@@ -350,6 +356,14 @@ func (r *Repository) isTag(tagname string) bool {
 		return false
 	}
 	return true
+}
+
+// isValidTagName checks if the tag name matches the pattern and
+// returns true or false. A tag name can only contain lowercase and
+// uppercase letters, digits and underscores.
+func (r *Repository) isValidTagName(tagname string) bool {
+	matched, _ := regexp.MatchString(config.ValidTagsRegex, tagname)
+	return matched
 }
 
 // The getMetadata method downloads the repomd metadata when required and
