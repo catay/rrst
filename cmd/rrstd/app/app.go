@@ -11,15 +11,17 @@ import (
 
 const (
 	DefaultConfig = config.DefaultConfigPath
+	DefaultPort   = config.DefaultServerPort
 )
 
 type App struct {
 	config       *config.Config
 	repositories []*repository.Repository
+	port         string
 }
 
-func NewApp(configFile string) (a *App, err error) {
-	a = &App{}
+func NewApp(configFile string, port string) (a *App, err error) {
+	a = &App{port: port}
 
 	// initialize the configuration
 	a.config, err = config.NewConfig(configFile)
@@ -64,5 +66,5 @@ func (a *App) Server() error {
 		}
 	}
 
-	return http.ListenAndServe(":3000", nil)
+	return http.ListenAndServe(":"+a.port, nil)
 }

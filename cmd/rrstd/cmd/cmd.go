@@ -13,6 +13,7 @@ type Cli struct {
 	app        *app.App
 	configFile *string
 	verbose    *bool
+	port       *string
 }
 
 func NewCli() *Cli {
@@ -23,6 +24,7 @@ func NewCli() *Cli {
 	c.Author(version.Author)
 	c.configFile = c.Flag("config", "Path to alternate YAML configuration file.").Short('c').Default(app.DefaultConfig).String()
 	c.verbose = c.Flag("verbose", "Turn on verbose output. Default is verbose turned off.").Short('v').Bool()
+	c.port = c.Flag("port", "Port number to listen on.").Short('p').Default(app.DefaultPort).String()
 	return c
 }
 
@@ -30,7 +32,7 @@ func (c *Cli) Run() error {
 	var err error
 	//c.action = kingpin.MustParse(c.Parse(os.Args[1:]))
 	kingpin.MustParse(c.Parse(os.Args[1:]))
-	c.app, err = app.NewApp(*c.configFile)
+	c.app, err = app.NewApp(*c.configFile, *c.port)
 	if err != nil {
 		return err
 	}
