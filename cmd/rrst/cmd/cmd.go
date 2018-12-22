@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/catay/rrst/cmd/rrst"
+	"github.com/catay/rrst/cmd/rrst/app"
 	"github.com/catay/rrst/version"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"os"
