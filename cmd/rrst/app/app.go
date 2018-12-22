@@ -137,7 +137,11 @@ func (a *App) showRepo(repo string) error {
 		if r.HasRevisions() {
 			fmt.Fprintln(w, "REVISIONS\tCREATED\tTAGS")
 			for _, v := range r.Revisions {
-				fmt.Fprintf(w, "%v\t%v\t%v\n", v.Id, v.Timestamp(), strings.Join(v.TagNames(), ", "))
+				tags := strings.Join(v.TagNames(), ", ")
+				if tags == "" {
+					tags = "<none>"
+				}
+				fmt.Fprintf(w, "%v\t%v\t%v\n", v.Id, v.Timestamp(), tags)
 			}
 		} else {
 			fmt.Fprintf(w, "No revisions available for repository %v\n.", repo)
