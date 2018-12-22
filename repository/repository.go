@@ -50,6 +50,11 @@ func (r *Repository) Update(rev int64) (bool, error) {
 	var revision *Revision
 	var err error
 
+	// If repo is disabled, do nothing on update
+	if !r.Enabled {
+		return false, err
+	}
+
 	// If revision not set, new metadata has to be fetched and will set the revision
 	// If revision set, metadata should already be there
 	if rev == 0 {
