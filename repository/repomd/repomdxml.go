@@ -40,6 +40,10 @@ type RpmPackage struct {
 	Type     string `xml:"type,attr"`
 	Name     string `xml:"name"`
 	Arch     string `xml:"arch"`
+	Checksum struct {
+		Type  string `xml:"type,attr"`
+		Value string `xml:",chardata"`
+	} `xml:"checksum"`
 	Location struct {
 		Path string `xml:"href,attr"`
 	} `xml:"location"`
