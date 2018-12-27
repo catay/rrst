@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 const (
@@ -38,7 +39,7 @@ func HttpProxyGet(req *http.Request) (resp *http.Response, err error) {
 }
 
 // Download file from URL and save to specified path.
-func HttpGetFile(url, filepath string) error {
+func HttpGetFile(url, filename string) error {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return err
@@ -51,7 +52,11 @@ func HttpGetFile(url, filepath string) error {
 
 	defer resp.Body.Close()
 
-	f, err := os.Create(filepath + tmpSuffix)
+	if err := os.MkdirAll(filepath.Dir(filename), 0700); err != nil {
+		return err
+	}
+
+	f, err := os.Create(filename + tmpSuffix)
 	if err != nil {
 		return err
 	}
@@ -63,7 +68,7 @@ func HttpGetFile(url, filepath string) error {
 		return err
 	}
 
-	err = os.Rename(filepath+tmpSuffix, filepath)
+	err = os.Rename(filename+tmpSuffix, filename)
 	if err != nil {
 		return err
 	}
