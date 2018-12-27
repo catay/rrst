@@ -31,7 +31,11 @@ func NewApp(configFile string, port string) (a *App, err error) {
 
 	// initialize repositories
 	for i, _ := range a.config.RepoConfigs {
-		a.repositories = append(a.repositories, repository.NewRepository(a.config.RepoConfigs[i]))
+		r, err := repository.NewRepository(a.config.RepoConfigs[i])
+		if err != nil {
+			return nil, fmt.Errorf("Initialize repo %s failed: %s", a.config.RepoConfigs[i].Name, err)
+		}
+		a.repositories = append(a.repositories, r)
 	}
 
 	return a, nil

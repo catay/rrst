@@ -35,13 +35,18 @@ type Repository struct {
 }
 
 // Create a new repository
-func NewRepository(repoConfig *config.RepositoryConfig) (r *Repository) {
-	r = &Repository{
+func NewRepository(repoConfig *config.RepositoryConfig) (*Repository, error) {
+	r := &Repository{
 		RepositoryConfig: repoConfig,
 	}
 
+	if err := r.initDirectories(); err != nil {
+		return nil, err
+	}
+
 	r.initState()
-	return r
+
+	return r, nil
 }
 
 // The Update method fetches the metadata and packages from upstream and
@@ -103,10 +108,6 @@ func (r *Repository) Tag(tagname string, revid int64, force bool) (bool, error) 
 	tagpath := r.ContentTagsPath + "/" + tagname
 	revpath := r.getRevisionDir(rev)
 
-	if err := os.MkdirAll(r.ContentTagsPath, 0700); err != nil {
-		return false, err
-	}
-
 	// check if tag already exists, if not, create the tag symlink.
 	tag := r.tagByName(tagname)
 	if tag == nil {
@@ -130,6 +131,26 @@ func (r *Repository) Tag(tagname string, revid int64, force bool) (bool, error) 
 	}
 
 	return true, nil
+}
+
+// initDirectories creates the content file, metadata, tags and tmp dirs.
+// It returns an error when a dir can't be created.
+func (r *Repository) initDirectories() error {
+	if r.Enabled {
+		dirs := []string{
+			r.ContentFilesPath,
+			r.ContentMDPath,
+			r.ContentTagsPath,
+			r.ContentTmpPath,
+		}
+
+		for _, d := range dirs {
+			if err := os.MkdirAll(d, 0700); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // The initState method updates the data structures with the state on disk.
@@ -473,10 +494,6 @@ func (r *Repository) getPackages(rev *Revision) (bool, error) {
 
 	pm, err := repomd.NewPrimaryDataXML(uf)
 	if err != nil {
-		return false, err
-	}
-
-	if err := os.MkdirAll(r.ContentFilesPath, 0700); err != nil {
 		return false, err
 	}
 
