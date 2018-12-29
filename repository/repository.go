@@ -11,12 +11,9 @@ import (
 	"os"
 	"strconv"
 	//	"github.com/catay/rrst/api/suse"
-	//	"github.com/catay/rrst/repomd"
 	"github.com/catay/rrst/util/file"
-	//	"io"
 	"path/filepath"
 	"regexp"
-	//	"strings"
 )
 
 const (
@@ -82,7 +79,7 @@ func (r *Repository) Update(rev int64) (bool, error) {
 	r.initState()
 
 	if r.isLatestRevision(revision) {
-		fmt.Println(" > link revision to latest tag")
+		//		fmt.Println(" > link revision to latest tag")
 		return r.Tag("latest", revision.Id, true)
 	}
 
@@ -111,14 +108,11 @@ func (r *Repository) Tag(tagname string, revid int64, force bool) (bool, error) 
 	// check if tag already exists, if not, create the tag symlink.
 	tag := r.tagByName(tagname)
 	if tag == nil {
-		fmt.Printf("Add new tag %v with revision %v\n", tagname, revid)
 		r.addTag(NewTag(tagname, rev))
 	} else {
 		if tag.Revision.Id == rev.Id {
-			fmt.Printf("Tag %v already links to revision %v.\n", tag.Name, tag.Revision.Id)
 			return false, nil
 		} else {
-			fmt.Printf("Update tag %v with revision %v to revision %v.\n", tag.Name, tag.Revision.Id, rev.Id)
 			if err := os.Remove(tagpath); err != nil {
 				return false, err
 			}
@@ -392,41 +386,33 @@ func (r *Repository) isValidTagName(tagname string) bool {
 func (r *Repository) getMetadata() (*Revision, error) {
 	rev, ok := r.getLatestRevision()
 
-	fmt.Println(" > fetch upstream repomd.xml in memory")
-
 	current, err := r.getUpstreamMetadata()
 	if err != nil {
 		return rev, err
 	}
 
 	if ok {
-		fmt.Println(" > compare upstream repomd.xml with latest revision repomd.xml")
-
 		previous, err := r.getLocalMetadata(rev)
 		if err != nil {
 			return rev, err
 		}
 
 		if previous.Compare(current) {
-			fmt.Println(" > upstream and latest revision equal, do nothing")
 			return rev, nil
 		}
 	}
 
-	fmt.Println(" > create new revision")
 	rev = NewRevision()
 
 	if err := r.createRevisionDir(rev); err != nil {
 		return rev, fmt.Errorf("revision creation failed: %s", err)
 	}
 
-	fmt.Println(" > save upstream repomd.xml to disk")
 	if err := current.Save(r.getRevisionDir(rev) + repoXMLfile); err != nil {
 		return rev, err
 	}
 
 	for _, v := range current.Data {
-		fmt.Println("  > ", v.Location.Path)
 		if err := h.HttpGetFile(r.RemoteURI+"/"+v.Location.Path, r.getRevisionDir(rev)+"/"+v.Location.Path); err != nil {
 			return rev, err
 		}
@@ -466,10 +452,7 @@ func (r *Repository) getLocalMetadata(rev *Revision) (*repomd.RepomdXML, error) 
 // The getPackages method downloads the upstream packages.
 // If packages are downloaded true will be returned, if not false.
 func (r *Repository) getPackages(rev *Revision) (bool, error) {
-
 	var primaryDataPath string
-
-	fmt.Printf(" > fetch packages for revision: %v\n", rev.Id)
 
 	rm, err := r.getLocalMetadata(rev)
 	if err != nil {
@@ -497,19 +480,17 @@ func (r *Repository) getPackages(rev *Revision) (bool, error) {
 		return false, err
 	}
 
-	fmt.Println(pm.Packages)
-
-	for _, v := range pm.Package {
-		if file.IsRegularFile(r.ContentFilesPath + "/" + v.Location.Path) {
-			fmt.Println("  >> " + v.Location.Path + "... already present")
-		} else {
+	for i, v := range pm.Package {
+		fmt.Printf("\033[2K\r%-40v\t[%5v/%-5v]\t%v", r.Name, i+1, pm.Packages, v.Location.Path)
+		if !file.IsRegularFile(r.ContentFilesPath + "/" + v.Location.Path) {
 			if err := h.HttpGetFile(r.RemoteURI+"/"+v.Location.Path, r.ContentFilesPath+"/"+v.Location.Path); err != nil {
-				fmt.Println("  >> " + v.Location.Path + "... failed")
 				return false, err
 			}
-			fmt.Println("  >> " + v.Location.Path + "... done")
 		}
 	}
+
+	fmt.Printf("\033[2K\r%-40v\t[%5[2]v/%-5[2]v]\tDone\n", r.Name, pm.Packages)
+
 	return true, err
 }
 

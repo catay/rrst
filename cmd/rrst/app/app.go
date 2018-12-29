@@ -69,7 +69,7 @@ func (a *App) Update(repo string, rev int64) {
 
 	if repo != "" {
 		if r, ok := a.getRepoName(repo); ok {
-			fmt.Printf("* Updating %s ...\n", r.Name)
+			//fmt.Printf("* Updating %s ...\n", r.Name)
 			_, err := r.Update(rev)
 			if err != nil {
 				fmt.Println(" > error: ", err)
@@ -79,7 +79,7 @@ func (a *App) Update(repo string, rev int64) {
 		}
 	} else {
 		for _, r := range a.repositories {
-			fmt.Printf("* Updating %s ...\n", r.Name)
+			//fmt.Printf("* Updating %s ...\n", r.Name)
 			r.Update(rev) // rev will always be empty
 		}
 	}
