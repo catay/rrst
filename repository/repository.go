@@ -3,17 +3,17 @@ package repository
 import (
 	"compress/gzip"
 	"fmt"
+	"github.com/catay/rrst/api/suse"
 	"github.com/catay/rrst/config"
 	"github.com/catay/rrst/repository/repomd"
+	"github.com/catay/rrst/util/file"
 	h "github.com/catay/rrst/util/http"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strconv"
-	//	"github.com/catay/rrst/api/suse"
-	"github.com/catay/rrst/util/file"
 	"path/filepath"
 	"regexp"
+	"strconv"
 )
 
 const (
@@ -26,9 +26,6 @@ type Repository struct {
 	*config.RepositoryConfig
 	Revisions []*Revision
 	Tags      []*Tag
-	//secret      string
-	//topLevelDir string
-	//metadata    *repomd.Repomd
 }
 
 // Create a new repository
@@ -79,7 +76,6 @@ func (r *Repository) Update(rev int64) (bool, error) {
 	r.initState()
 
 	if r.isLatestRevision(revision) {
-		//		fmt.Println(" > link revision to latest tag")
 		return r.Tag("latest", revision.Id, true)
 	}
 
@@ -413,7 +409,7 @@ func (r *Repository) getMetadata() (*Revision, error) {
 	}
 
 	for _, v := range current.Data {
-		if err := h.HttpGetFile(r.RemoteURI+"/"+v.Location.Path, r.getRevisionDir(rev)+"/"+v.Location.Path); err != nil {
+		if err := h.HttpGetFile(r.providerURLconversion(r.RemoteURI+"/"+v.Location.Path), r.getRevisionDir(rev)+"/"+v.Location.Path); err != nil {
 			return rev, err
 		}
 	}
@@ -425,7 +421,7 @@ func (r *Repository) getMetadata() (*Revision, error) {
 // The getUpstreamMetadata method fetches a remote repomd.xml in memory
 // and returns a RepomdXML type.
 func (r *Repository) getUpstreamMetadata() (*repomd.RepomdXML, error) {
-	req, err := http.NewRequest("GET", r.RemoteURI+repoXMLfile, nil)
+	req, err := http.NewRequest("GET", r.providerURLconversion(r.RemoteURI+repoXMLfile), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -483,7 +479,7 @@ func (r *Repository) getPackages(rev *Revision) (bool, error) {
 	for i, v := range pm.Package {
 		fmt.Printf("\033[2K\r%-40v\t[%5v/%-5v]\t%v", r.Name, i+1, pm.Packages, v.Location.Path)
 		if !file.IsRegularFile(r.ContentFilesPath + "/" + v.Location.Path) {
-			if err := h.HttpGetFile(r.RemoteURI+"/"+v.Location.Path, r.ContentFilesPath+"/"+v.Location.Path); err != nil {
+			if err := h.HttpGetFile(r.providerURLconversion(r.RemoteURI+"/"+v.Location.Path), r.ContentFilesPath+"/"+v.Location.Path); err != nil {
 				return false, err
 			}
 		}
@@ -492,6 +488,28 @@ func (r *Repository) getPackages(rev *Revision) (bool, error) {
 	fmt.Printf("\033[2K\r%-40v\t[%5[2]v/%-5[2]v]\tDone\n", r.Name, pm.Packages)
 
 	return true, err
+}
+
+// providerURLconversion is a dirty hack to deal with the provider specifics.
+// It will return a converted URL when required or the default one.
+// Currently only covers SUSE.
+// This needs to be reviewed and rewritten. Major FIXME required !
+func (r *Repository) providerURLconversion(url string) string {
+	if r.Provider != nil && r.Provider.Name == "SUSE" {
+		//		fmt.Println("debug SUSE:", r.Provider.Variables[0].Value)
+		s := suse.NewSCCApi(r.Provider.Variables[0].Value, r.ContentTmpPath)
+		if err := s.FetchProductsJson(); err != nil {
+			fmt.Println("SUSE fetch json failed: ", err)
+			return url
+		}
+
+		secret, ok := s.GetSecretURI(r.RemoteURI)
+		if ok {
+			//			fmt.Println("debug secret:", secret)
+			return url + "?" + secret
+		}
+	}
+	return url
 }
 
 // GetRegCode will return the regcode when set through an environment
