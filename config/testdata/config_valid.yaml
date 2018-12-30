@@ -1,23 +1,24 @@
+version: 0.0.1
 global:
   content_path: /var/tmp/rrst
   max_tags_to_keep: 10
+  providers:
+    - id: SLES01
+      provider: SUSE
+      variables:
+        - name: scc_reg_code
+          value: ${SCC_REG_CODE_01}
 repositories:
   - id: 1
-    name: SLES-12-3-X86_64-updates
+    name: SLES-15-0-X86_64-updates
     type: rpmmd
-    vendor: SUSE
-    reg_code: ${SCC_REG_CODE_01}
-    remote_uri: https://updates.suse.com/SUSE/Updates/SLE-SERVER/12-SP3/x86_64/update
-    content_suffix_path: SLES/12/3/x86_64/updates
-    enabled:  true
-    include_patterns:
-      - '.*bash-.4'
-      - 'x86_64/bind-9.9.9P1-63.7.1.x86_64.rpm'
+    provider_id: SLES01
+    enabled: true
+    remote_uri: https://updates.suse.com/SUSE/Updates/SLE-Product-SLES/15/x86_64/update
+    content_suffix_path: SLES/15/0/x86_64/updates
   - id: 2
-    name: SLES-11-4-X86_64-updates
+    name: CENTOS-7-5-X86_64-updates
     type: rpmmd
-    vendor: SUSE
-    reg_code: ${SCC_REG_CODE_02}
-    remote_uri: https://updates.suse.com/SUSE/Updates/SLE-SERVER/11-SP4/x86_64/update
-    enabled:  true
-    content_suffix_path: SLES/11/3/x86_64/updates
+    enabled: false
+    remote_uri: http://ftp.belnet.be/mirror/ftp.centos.org/7.5.1804/updates/x86_64/
+    content_suffix_path: CENTOS/7/5/x86_64/updates
