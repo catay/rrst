@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/catay/rrst/cmd/rrst/app"
+	"github.com/catay/rrst/cmd/app"
 	"github.com/catay/rrst/version"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"os"
@@ -19,6 +19,7 @@ type Cli struct {
 	cmdUpdate        *kingpin.CmdClause
 	cmdTag           *kingpin.CmdClause
 	cmdDelete        *kingpin.CmdClause
+	cmdServer        *kingpin.CmdClause
 	cmdTagForceFlag  *bool
 	cmdCreateRepoArg *string
 	cmdListRepoArg   *string
@@ -28,6 +29,7 @@ type Cli struct {
 	cmdTagTagArg     *string
 	cmdTagRevArg     *int64
 	cmdDeleteRepoArg *string
+	cmdServerPort    *string
 }
 
 func NewCli() *Cli {
@@ -43,6 +45,7 @@ func NewCli() *Cli {
 	c.cmdUpdate = c.Command("update", "Update repositories with upstream content.")
 	c.cmdTag = c.Command("tag", "Tag repository revisions.")
 	c.cmdDelete = c.Command("delete", "Delete repositories. **NOT IMPLEMENTED**")
+	c.cmdServer = c.Command("server", "HTTP server serving repositories.")
 
 	c.cmdCreateRepoArg = c.cmdCreate.Arg("repo name", "Repository name.").String()
 	c.cmdListRepoArg = c.cmdList.Arg("repo name", "Repository name.").String()
@@ -56,6 +59,7 @@ func NewCli() *Cli {
 
 	c.cmdDeleteRepoArg = c.cmdDelete.Arg("repo name", "Repository name.").String()
 
+	c.cmdServerPort = c.cmdServer.Flag("port", "Port number to listen on.").Short('p').Default(app.DefaultPort).String()
 	return c
 }
 
@@ -78,6 +82,8 @@ func (c *Cli) Run() error {
 		err = c.tagCli()
 	case "delete":
 		err = c.deleteCli()
+	case "server":
+		err = c.serverCli()
 	}
 
 	return err
@@ -105,5 +111,10 @@ func (c *Cli) tagCli() error {
 
 func (c *Cli) deleteCli() error {
 	c.app.Delete(c.action)
+	return nil
+}
+
+func (c *Cli) serverCli() error {
+	c.app.Server(*c.cmdServerPort)
 	return nil
 }

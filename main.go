@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/catay/rrst/cmd/rrst/cmd"
+	"github.com/catay/rrst/cmd"
 	"os"
 )
 
