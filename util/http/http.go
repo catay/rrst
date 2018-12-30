@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const (
@@ -68,10 +69,25 @@ func HttpGetFile(url, filename string) error {
 		return err
 	}
 
+	if err := SetLastModifiedTimeFromHeader(filename+tmpSuffix, resp.Header); err != nil {
+		return err
+	}
+
 	err = os.Rename(filename+tmpSuffix, filename)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// SetLastModifiedTimeFromHeader sets the modified time on the
+// downloaded file as specified in the HTTP header. If the header is
+// not preset the now time is taken.
+func SetLastModifiedTimeFromHeader(name string, header http.Header) error {
+	mtime, err := http.ParseTime(header.Get("Last-Modified"))
+	if err != nil {
+		mtime = time.Now()
+	}
+	return os.Chtimes(name, time.Now(), mtime)
 }
