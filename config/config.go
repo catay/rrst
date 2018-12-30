@@ -38,16 +38,14 @@ type GlobalConfig struct {
 
 // RepositoryConfig contains the per repository configuration settings.
 type RepositoryConfig struct {
-	Id                 int      `yaml:"id"`
-	Name               string   `yaml:"name"`
-	RType              string   `yaml:"type"`
-	ProviderId         string   `yaml:"provider_id"`
-	RegCode            string   `yaml:"reg_code"`
-	RemoteURI          string   `yaml:"remote_uri"`
-	ContentSuffixPath  string   `yaml:"content_suffix_path"`
-	IncludePatterns    []string `yaml:"include_patterns"`
-	MaxRevisionsToKeep int      `yaml:"max_tags_to_keep"`
-	Enabled            bool     `yaml:"enabled"`
+	Id                 int    `yaml:"id"`
+	Name               string `yaml:"name"`
+	RType              string `yaml:"type"`
+	ProviderId         string `yaml:"provider_id"`
+	RemoteURI          string `yaml:"remote_uri"`
+	ContentSuffixPath  string `yaml:"content_suffix_path"`
+	MaxRevisionsToKeep int    `yaml:"max_tags_to_keep"`
+	Enabled            bool   `yaml:"enabled"`
 	ContentFilesPath   string
 	ContentMDPath      string
 	ContentTagsPath    string
