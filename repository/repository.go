@@ -132,18 +132,16 @@ func (r *Repository) RefreshState() {
 // initDirectories creates the content file, metadata, tags and tmp dirs.
 // It returns an error when a dir can't be created.
 func (r *Repository) initDirectories() error {
-	if r.Enabled {
-		dirs := []string{
-			r.ContentFilesPath,
-			r.ContentMDPath,
-			r.ContentTagsPath,
-			r.ContentTmpPath,
-		}
+	dirs := []string{
+		r.ContentFilesPath,
+		r.ContentMDPath,
+		r.ContentTagsPath,
+		r.ContentTmpPath,
+	}
 
-		for _, d := range dirs {
-			if err := os.MkdirAll(d, 0700); err != nil {
-				return err
-			}
+	for _, d := range dirs {
+		if err := os.MkdirAll(d, 0700); err != nil {
+			return err
 		}
 	}
 	return nil
