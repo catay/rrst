@@ -123,6 +123,12 @@ func (r *Repository) Tag(tagname string, revid int64, force bool) (bool, error) 
 	return true, nil
 }
 
+// RefreshState refreshes the underlying tag and revision state.
+// Under the hood it calls initState.
+func (r *Repository) RefreshState() {
+	r.initState()
+}
+
 // initDirectories creates the content file, metadata, tags and tmp dirs.
 // It returns an error when a dir can't be created.
 func (r *Repository) initDirectories() error {
@@ -147,9 +153,17 @@ func (r *Repository) initDirectories() error {
 // FIXME: probably best to panic in case those return an error. That would
 // mean the state under the content path is corrupted.
 func (r *Repository) initState() error {
+	r.resetState()
 	r.initRevisionState()
 	r.initTagState()
 	return nil
+}
+
+// resetState sets the Tags and Revisions slices to nil.
+// This ensures the underlying memory is properly released released.
+func (r *Repository) resetState() {
+	r.Tags = nil
+	r.Revisions = nil
 }
 
 // initRevisionState fetches all revision directories of the metadata dir.
