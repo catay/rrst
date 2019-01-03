@@ -115,6 +115,5 @@ func (c *Cli) deleteCli() error {
 }
 
 func (c *Cli) serverCli() error {
-	c.app.Server(*c.cmdServerPort)
-	return nil
+	return c.app.Server(*c.cmdServerPort)
 }
