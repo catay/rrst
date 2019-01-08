@@ -95,7 +95,6 @@ func (a *App) Tag(repo string, tag string, rev int64, force bool) {
 
 	if repo != "" {
 		if r, ok := a.getRepoName(repo); ok {
-			fmt.Printf("* Tag %s ...\n", r.Name)
 			_, err := r.Tag(tag, rev, force)
 			if err != nil {
 				fmt.Println("tag error: ", err)
