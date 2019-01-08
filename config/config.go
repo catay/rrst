@@ -33,7 +33,7 @@ type Config struct {
 type GlobalConfig struct {
 	ContentPath        string      `yaml:"content_path"`
 	Providers          []*Provider `yaml:"providers"`
-	MaxRevisionsToKeep int         `yaml:"max_tags_to_keep"`
+	MaxRevisionsToKeep int         `yaml:"max_revs_to_keep"`
 }
 
 // RepositoryConfig contains the per repository configuration settings.
