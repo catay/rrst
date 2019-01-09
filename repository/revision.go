@@ -59,7 +59,7 @@ func (re *Revision) DeleteTag(t *Tag) bool {
 func (re *Revision) Timestamp() string {
 	year, month, day := time.Unix(int64(re.Id), 0).Date()
 	hour, min, sec := time.Unix(int64(re.Id), 0).Clock()
-	return fmt.Sprintf("%v-%d-%v %v:%v:%v", year, month, day, hour, min, sec)
+	return fmt.Sprintf("%v-%02d-%02v %02v:%02v:%02v", year, month, day, hour, min, sec)
 }
 
 // TagNames returns an array of strings containing only the tag name.

@@ -511,7 +511,6 @@ implementation.
 * Verify the checksum hash of the packages
 * HTTPS support for the webserver
 * Parallel package and repository downloads
-* Fix the date formating in the list commmand
 * Check if there is enough free capacity on the filesystem before download
 * GPG support
 * Add a quiet cli flag
