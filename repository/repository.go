@@ -509,7 +509,7 @@ func (r *Repository) getPackages(rev *Revision) (bool, error) {
 func (r *Repository) providerURLconversion(url string) string {
 	if r.Provider != nil && r.Provider.Name == "SUSE" {
 		//		fmt.Println("debug SUSE:", r.Provider.Variables[0].Value)
-		s := suse.NewSCCApi(r.Provider.Variables[0].Value, r.ContentTmpPath)
+		s := suse.NewSCCApi(r.Provider.Variables[0].Value, os.TempDir())
 		if err := s.FetchProductsJson(); err != nil {
 			fmt.Println("SUSE fetch json failed: ", err)
 			return url
