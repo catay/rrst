@@ -145,7 +145,7 @@ func (a *App) showRepo(repo string) error {
 	if r, ok := a.getRepoName(repo); ok {
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0)
 		if r.HasRevisions() {
-			fmt.Fprintln(w, "REVISIONS\tCREATED\tTAGS")
+			fmt.Fprintln(w, "REVISION\tCREATED\tTAGS")
 			for _, v := range r.Revisions {
 				tags := strings.Join(v.TagNames(), ", ")
 				if tags == "" {
