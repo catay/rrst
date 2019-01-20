@@ -11,9 +11,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -54,21 +56,14 @@ func (r *Repository) Update(rev int64) (bool, error) {
 		return false, err
 	}
 
-	// If revision not set, new metadata has to be fetched and will set the revision
-	// If revision set, metadata should already be there
-	if rev == 0 {
-		revision, err = r.getMetadata()
-		if err != nil {
-			return false, err
-		}
+	// If remote URL is empty, assume a local repo, else
+	// assume there is a linked upstream repo
+	if r.RemoteURI == "" {
+		revision, err = r.updateFromLocal(rev)
 	} else {
-		revision = NewRevisionFromId(rev)
-		if !r.isRevision(revision) {
-			return false, fmt.Errorf("Not a valid or existing revision.")
-		}
+		revision, err = r.updateFromRemote(rev)
 	}
 
-	_, err = r.getPackages(revision)
 	if err != nil {
 		return false, err
 	}
@@ -457,14 +452,146 @@ func (r *Repository) getLocalMetadata(rev *Revision) (*repomd.RepomdXML, error) 
 	return repomd.NewRepomdXML(f)
 }
 
+// updateFromRemote will handle all required operations for repositories
+// with a remote URL set.
+func (r *Repository) updateFromRemote(rev int64) (*Revision, error) {
+	var revision *Revision
+	var err error
+
+	// If revision not set, new metadata has to be fetched and will set the revision
+	// If revision set, metadata should already be there
+	if rev == 0 {
+		revision, err = r.getMetadata()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		revision = NewRevisionFromId(rev)
+		if !r.isRevision(revision) {
+			return nil, fmt.Errorf("Not a valid or existing revision.")
+		}
+	}
+
+	_, err = r.getPackages(revision)
+	if err != nil {
+		return nil, err
+	}
+
+	return revision, err
+}
+
+// updateFromLocal will handle all required operations for repositories
+// without a remote URL set.
+func (r *Repository) updateFromLocal(rev int64) (*Revision, error) {
+	var refresh bool
+	localPackages, err := r.getLocalPackageList()
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(localPackages) == 0 {
+		return nil, fmt.Errorf("Not possible to update due to no content in local repo files directory.")
+	}
+
+	revision, ok := r.getLatestRevision()
+	if ok {
+		mdPackages, err := r.getMetadataPackageList(revision)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range mdPackages {
+			_, ok := localPackages[r.ContentFilesPath+"/"+v.Location.Path]
+			if ok {
+				localPackages[r.ContentFilesPath+"/"+v.Location.Path] = true
+			}
+		}
+
+		for _, v := range localPackages {
+			if !v {
+				refresh = true
+				break
+			}
+		}
+	} else {
+		refresh = true
+	}
+
+	if refresh {
+		revision = NewRevision()
+		err = r.refreshLocalMetadata(revision)
+	}
+
+	fmt.Printf("\033[2K\r%-40v\t[%5[2]v/%-5[2]v]\tDone\n", r.Name, len(localPackages))
+	return revision, err
+}
+
+// refreshLocalMetadata creates new metadata for a revision.
+// FIXME: remove hardcoded call to creatrepo and create a wrapper
+// around it so it both checks for createrepo_c and createrepo.
+func (r *Repository) refreshLocalMetadata(revision *Revision) error {
+	if err := r.createRevisionDir(revision); err != nil {
+		return fmt.Errorf("revision creation failed: %s", err)
+	}
+
+	//_, err := exec.Command("/usr/bin/createrepo_c", "-o", r.getRevisionDir(revision), r.ContentFilesPath).Output()
+	_, err := exec.Command("/usr/bin/createrepo", "-o", r.getRevisionDir(revision), r.ContentFilesPath).Output()
+
+	return err
+}
+
+// getLocalPackageList returns a map with as key the package path and
+// a boolean set to false.
+func (r *Repository) getLocalPackageList() (map[string]bool, error) {
+	localPackages := make(map[string]bool)
+
+	// build list of local rpm filepaths and store it in localPackages
+	err := filepath.Walk(r.ContentFilesPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.Mode().IsRegular() && strings.HasSuffix(path, "rpm") {
+			localPackages[path] = false
+		}
+		return nil
+	})
+	return localPackages, err
+}
+
 // The getPackages method downloads the upstream packages.
 // If packages are downloaded true will be returned, if not false.
 func (r *Repository) getPackages(rev *Revision) (bool, error) {
+	packages, err := r.getMetadataPackageList(rev)
+	if err != nil {
+		return false, err
+	}
+
+	total := len(packages)
+
+	for i, v := range packages {
+		fmt.Printf("\033[2K\r%-40v\t[%5v/%-5v]\t%v", r.Name, i+1, total, v.Location.Path)
+		if !file.IsRegularFile(r.ContentFilesPath + "/" + v.Location.Path) {
+			if err := h.HttpGetFile(r.providerURLconversion(r.RemoteURI+"/"+v.Location.Path), r.ContentFilesPath+"/"+v.Location.Path); err != nil {
+				return false, err
+			}
+		}
+	}
+
+	fmt.Printf("\033[2K\r%-40v\t[%5[2]v/%-5[2]v]\tDone\n", r.Name, total)
+
+	return true, err
+}
+
+// getMetadataPackageList returns an array of RPM packages out of the
+// metadata for the given revision.
+func (r *Repository) getMetadataPackageList(rev *Revision) ([]repomd.RpmPackage, error) {
 	var primaryDataPath string
 
 	rm, err := r.getLocalMetadata(rev)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	for _, v := range rm.Data {
@@ -475,31 +602,20 @@ func (r *Repository) getPackages(rev *Revision) (bool, error) {
 
 	f, err := os.Open(primaryDataPath)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	uf, err := gzip.NewReader(f)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	pm, err := repomd.NewPrimaryDataXML(uf)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	for i, v := range pm.Package {
-		fmt.Printf("\033[2K\r%-40v\t[%5v/%-5v]\t%v", r.Name, i+1, pm.Packages, v.Location.Path)
-		if !file.IsRegularFile(r.ContentFilesPath + "/" + v.Location.Path) {
-			if err := h.HttpGetFile(r.providerURLconversion(r.RemoteURI+"/"+v.Location.Path), r.ContentFilesPath+"/"+v.Location.Path); err != nil {
-				return false, err
-			}
-		}
-	}
-
-	fmt.Printf("\033[2K\r%-40v\t[%5[2]v/%-5[2]v]\tDone\n", r.Name, pm.Packages)
-
-	return true, err
+	return pm.Package, nil
 }
 
 // providerURLconversion is a dirty hack to deal with the provider specifics.
@@ -517,303 +633,8 @@ func (r *Repository) providerURLconversion(url string) string {
 
 		secret, ok := s.GetSecretURI(r.RemoteURI)
 		if ok {
-			//			fmt.Println("debug secret:", secret)
 			return url + "?" + secret
 		}
 	}
 	return url
 }
-
-// GetRegCode will return the regcode when set through an environment
-// variable.
-// On success it will return the regcode and the boolean will be true.
-// If the environment variable is not set, it will return an empty
-// string and the boolean will be false.
-// If the config contains a regular string, it will return the the
-// regcode and the boolean will be true.
-//func (r *Repository) GetRegCode() (string, bool) {
-//
-//	if strings.HasPrefix(r.RegCode, "${") && strings.HasSuffix(r.RegCode, "}") {
-//		key := strings.TrimPrefix(r.RegCode, "${")
-//		key = strings.TrimSuffix(key, "}")
-//		return os.LookupEnv(key)
-//	}
-//
-//	return r.RegCode, true
-//}
-//
-//func (r *Repository) Clean() error {
-//	rm, err := repomd.NewRepoMd(r.RemoteURI, r.secret, r.CacheDir+"/"+r.Name)
-//	if err != nil {
-//		return err
-//	}
-//
-//	fmt.Printf("  * %s\n", r.Name)
-//
-//	err = rm.Clean()
-//
-//	return err
-//}
-//
-//func (r *Repository) Sync() error {
-//
-//	var err error = nil
-//
-//	fmt.Printf("  * %s\n", r.Name)
-//
-//	if r.Vendor == "SUSE" {
-//		//fmt.Println("  - Fetch SUSE products json if older then x hours")
-//
-//		regCode, ok := r.GetRegCode()
-//		if !ok {
-//			return fmt.Errorf("Environment variable %v not set", r.RegCode)
-//		}
-//
-//		scc := suse.NewSCCApi(regCode, r.CacheDir)
-//		if err := scc.FetchProductsJson(); err != nil {
-//			return err
-//		}
-//
-//		//fmt.Println("  - Get secret hash for give URL repo")
-//
-//		r.secret, ok = scc.GetSecretURI(r.RemoteURI)
-//		if !ok {
-//			return fmt.Errorf("Secret for url  %v not found", r.RemoteURI)
-//		}
-//	}
-//
-//	//fmt.Println("  - Fetch repomd xml file")
-//	r.metadata, err = repomd.NewRepoMd(r.RemoteURI, r.secret, r.CacheDir+"/"+r.Name)
-//	if err != nil {
-//		return err
-//	}
-//
-//	if err := r.metadata.Metadata(); err != nil {
-//		return err
-//	}
-//
-//	//fmt.Println("Package count:", r.metadata.PackageCount())
-//
-//	// given a repository
-//
-//	// when update policy is set to stage
-//	// and main dir does not exist
-//	// then topLevelDir should be set to 'main'
-//
-//	// when update policy is set to stage
-//	// and main dir does exist
-//	// then topLevelDir should be set to 'current timestamp'
-//
-//	// when update policy is set to merge
-//	// and main dir does not exist
-//	// then topLevelDir should be set to 'main'
-//
-//	// when update policy is set to merge
-//	// and main dir does exist
-//	// then topLevelDir should be set to 'main'
-//
-//	r.topLevelDir = r.LocalURI + "/" + "main"
-//
-//	if r.GetUpdatePolicy() == "stage" {
-//		if file.IsDirectory(r.topLevelDir) {
-//			t := time.Now()
-//			timeStamp := fmt.Sprintf("%02d%02d%02d-%02d%02d%02d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
-//			r.topLevelDir = r.LocalURI + "/" + timeStamp
-//		} else {
-//			r.topLevelDir = r.LocalURI + "/" + "main"
-//		}
-//
-//	}
-//
-//	// create toplevel dir
-//	if err := os.MkdirAll(r.LocalURI, 0755); err != nil {
-//		return err
-//	}
-//
-//	if err := r.markPackagesForDownload(); err != nil {
-//		return err
-//	}
-//
-//	rpms := r.metadata.Packages()
-//
-//	//fmt.Println("DEBUG - POLICY - ", r.GetUpdatePolicy())
-//	//fmt.Println("DEBUG - TOPDIR - ", r.topLevelDir)
-//
-//	for _, p := range rpms {
-//		//fmt.Printf("package: %v  download: %v\n", p.Name, p.ToDownload)
-//		if p.ToDownload {
-//			if err := r.downloadPackage(p); err != nil {
-//				return err
-//			}
-//		}
-//	}
-//
-//	//fmt.Println("  - Read repomd xml file and get package file location")
-//	//fmt.Println("  - Fetch packages xml file and check hash")
-//	//fmt.Println("  - Read packages xml file and get packages list and check hash")
-//	//fmt.Println("  - Download packages to local path if not existing yet and check hash")
-//
-//	return nil
-//}
-//
-//func (r *Repository) matchPatterns(p []string, s string) (bool, error) {
-//	if len(r.IncludePatterns) == 0 {
-//		return true, nil
-//	}
-//
-//	for _, p := range p {
-//		ok, err := regexp.MatchString(p, s)
-//		if err != nil {
-//			return false, err
-//		}
-//
-//		if ok {
-//			return true, nil
-//		}
-//	}
-//	return false, nil
-//}
-//
-//func (r *Repository) markPackagesForDownload() error {
-//
-//	var localPackages []string
-//
-//	// build list of local rpm filepaths and store it in localPackages
-//	err := filepath.Walk(r.LocalURI, func(path string, info os.FileInfo, err error) error {
-//		if err != nil {
-//			return err
-//		}
-//
-//		if info.Mode().IsRegular() && strings.HasSuffix(path, "rpm") {
-//			localPackages = append(localPackages, path)
-//		}
-//
-//		if info.Mode().IsRegular() && strings.HasSuffix(path, tmpSuffix) {
-//			localPackages = append(localPackages, path)
-//		}
-//
-//		return nil
-//	})
-//
-//	if err != nil {
-//		return err
-//	}
-//
-//	for i, p := range r.metadata.Packages() {
-//		ok, err := r.matchPatterns(r.IncludePatterns, p.Loc.Path)
-//		if err != nil {
-//			return err
-//		}
-//
-//		if ok {
-//			//fmt.Printf("DEBUG MARK p: %v\n", p.Loc.Path)
-//			r.metadata.PrimaryData.Package[i].ToDownload = true
-//			//r.metadata.Packages()[i].ToDownload = true
-//			//p.ToDownload = true
-//
-//			for _, lp := range localPackages {
-//				if strings.HasSuffix(lp, p.Loc.Path) {
-//					//p.ToDownload = false
-//					r.metadata.PrimaryData.Package[i].ToDownload = false
-//					//	r.metadata.Packages()[i].ToDownload = false
-//				}
-//
-//				// store the local path in case the package was not complelty downloaded
-//				if strings.HasSuffix(strings.TrimSuffix(lp, tmpSuffix), p.Loc.Path) {
-//					r.metadata.PrimaryData.Package[i].LocalPath = strings.TrimSuffix(lp, p.Loc.Path+tmpSuffix)
-//				}
-//			}
-//		}
-//	}
-//
-//	return nil
-//}
-//
-//func (r *Repository) packageExistsLocal(p repomd.RpmPackage) (bool, error) {
-//
-//	fullPath := r.LocalURI + "/" + p.Loc.Path
-//
-//	_, err := os.Open(fullPath)
-//
-//	if err == nil {
-//		return true, err
-//	} else {
-//		if os.IsNotExist(err) {
-//			return false, nil
-//		}
-//	}
-//
-//	return false, err
-//}
-//
-//func (r *Repository) downloadPackage(p repomd.RpmPackage) error {
-//
-//	rpmDir := r.topLevelDir + "/" + filepath.Dir(p.Loc.Path)
-//	remoteRpmPath := r.RemoteURI + "/" + p.Loc.Path + "?" + r.secret
-//	localRpmPath := r.topLevelDir + "/" + p.Loc.Path + tmpSuffix
-//
-//	if p.LocalPath != "" {
-//		localRpmPath = p.LocalPath + "/" + p.Loc.Path + tmpSuffix
-//	}
-//
-//	// create dir
-//	if err := os.MkdirAll(rpmDir, 0755); err != nil {
-//		return err
-//	}
-//
-//	// create a new file if it doesn't exist, if file exists open in append mode
-//	f, err := os.OpenFile(localRpmPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-//
-//	if err != nil {
-//		return err
-//	}
-//
-//	// get current file size
-//	stat, err := f.Stat()
-//	if err != nil {
-//		return err
-//	}
-//
-//	initialFileSize := stat.Size()
-//
-//	// download the file
-//	req, err := http.NewRequest("GET", remoteRpmPath, nil)
-//	if err != nil {
-//		return err
-//	}
-//
-//	resp, err := h.HttpProxyGet(req)
-//	if err != nil {
-//		return err
-//	}
-//
-//	fmt.Printf("    >> %-70s ... ", p.Loc.Path)
-//
-//	buf := make([]byte, 0, 1)
-//	var nbytes int64
-//
-//	for {
-//		n, err := resp.Body.Read(buf[:cap(buf)])
-//		buf = buf[:n]
-//		nbytes += int64(n)
-//
-//		// only start appending when buffer is greater than initial file size
-//		if nbytes > initialFileSize {
-//			f.Write(buf)
-//		}
-//
-//		if err == io.EOF {
-//			fmt.Println("done")
-//			break
-//		}
-//	}
-//
-//	resp.Body.Close()
-//	f.Close()
-//
-//	// rename the file by removing the filepart suffix
-//	err = os.Rename(localRpmPath, strings.TrimSuffix(localRpmPath, tmpSuffix))
-//
-//	return err
-//
-//}
