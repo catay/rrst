@@ -505,6 +505,10 @@ func (r *Repository) updateFromLocal(rev int64) (*Revision, error) {
 			_, ok := localPackages[r.ContentFilesPath+"/"+v.Location.Path]
 			if ok {
 				localPackages[r.ContentFilesPath+"/"+v.Location.Path] = true
+			} else {
+				// if package path is not a key of localPackages hash, a package is removed
+				// on the local filesystem and a refreh is forced.
+				refresh = true
 			}
 		}
 
