@@ -36,7 +36,7 @@ func NewCli() *Cli {
 	c := &Cli{
 		Application: kingpin.New(filepath.Base(os.Args[0]), "Remote Repository Sync Tool"),
 	}
-	c.Version(version.Version)
+	c.Version(version.FullVersionString)
 	c.Author(version.Author)
 	c.configFile = c.Flag("config", "Path to alternate YAML configuration file.").Short('c').Default(app.DefaultConfig).String()
 	c.verbose = c.Flag("verbose", "Turn on verbose output. Default is verbose turned off.").Short('v').Bool()
