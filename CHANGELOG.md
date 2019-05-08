@@ -1,3 +1,9 @@
+* Release 0.3.0 (2019/05/08)
+  - Improve versioning and build system.
+  - Take into account deleted packages on the local filesystem.
+  - Implement functionality for local only repositories.
+  - Store the temporary SCC json file in os.TempDir().
+  - Fix the date formatting in the list commmand.
 * Release 0.2.0 (2019/01/09)
   - complete redesign of the tool
   - built-in web server to serve RPM's
