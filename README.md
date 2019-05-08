@@ -504,7 +504,6 @@ implementation.
 * Add a credits file
 * Move all the repository management server-side and provide a REST API
 * Add and complete Go (Ginkgo) tests
-* Inject commit hash into the version string
 * Add delta RPM support
 * Replace content_suffix_path by the repo name (?)
 * Remove repository id as an array is ordered anyway
