@@ -37,9 +37,14 @@ type PrimaryDataXML struct {
 }
 
 type RpmPackage struct {
-	Type     string `xml:"type,attr"`
-	Name     string `xml:"name"`
-	Arch     string `xml:"arch"`
+	Type    string `xml:"type,attr"`
+	Name    string `xml:"name"`
+	Arch    string `xml:"arch"`
+	Version struct {
+		Epoch string `xml:"epoch,attr"`
+		Ver   string `xml:"ver,attr"`
+		Rel   string `xml:"rel,attr"`
+	} `xml:"version"`
 	Checksum struct {
 		Type  string `xml:"type,attr"`
 		Value string `xml:",chardata"`

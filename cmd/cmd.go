@@ -19,6 +19,7 @@ type Cli struct {
 	cmdUpdate        *kingpin.CmdClause
 	cmdTag           *kingpin.CmdClause
 	cmdDelete        *kingpin.CmdClause
+	cmdDiff          *kingpin.CmdClause
 	cmdServer        *kingpin.CmdClause
 	cmdTagForceFlag  *bool
 	cmdCreateRepoArg *string
@@ -29,6 +30,8 @@ type Cli struct {
 	cmdTagTagArg     *string
 	cmdTagRevArg     *int64
 	cmdDeleteRepoArg *string
+	cmdDiffRepoArg   *string
+	cmdDiffTags      *[]string
 	cmdServerPort    *string
 }
 
@@ -45,6 +48,7 @@ func NewCli() *Cli {
 	c.cmdUpdate = c.Command("update", "Update repositories with upstream content.")
 	c.cmdTag = c.Command("tag", "Tag repository revisions.")
 	c.cmdDelete = c.Command("delete", "Delete repositories. **NOT IMPLEMENTED**")
+	c.cmdDiff = c.Command("diff", "Show package differences between repository tags.")
 	c.cmdServer = c.Command("server", "HTTP server serving repositories.")
 
 	c.cmdCreateRepoArg = c.cmdCreate.Arg("repo name", "Repository name.").String()
@@ -58,6 +62,9 @@ func NewCli() *Cli {
 	c.cmdTagForceFlag = c.cmdTag.Flag("force", "Force tag creation. Default is false.").Short('f').Bool()
 
 	c.cmdDeleteRepoArg = c.cmdDelete.Arg("repo name", "Repository name.").String()
+
+	c.cmdDiffRepoArg = c.cmdDiff.Arg("repo name", "Repository name.").Required().String()
+	c.cmdDiffTags = c.cmdDiff.Arg("tag", "Compare package versions of whitespace delimited list of tags.").Required().Strings()
 
 	c.cmdServerPort = c.cmdServer.Flag("port", "Port number to listen on.").Short('p').Default(app.DefaultPort).String()
 	return c
@@ -80,6 +87,8 @@ func (c *Cli) Run() error {
 		err = c.updateCli()
 	case "tag":
 		err = c.tagCli()
+	case "diff":
+		err = c.diffCli()
 	case "delete":
 		err = c.deleteCli()
 	case "server":
@@ -106,6 +115,11 @@ func (c *Cli) updateCli() error {
 
 func (c *Cli) tagCli() error {
 	c.app.Tag(*c.cmdTagRepoArg, *c.cmdTagTagArg, *c.cmdTagRevArg, *c.cmdTagForceFlag)
+	return nil
+}
+
+func (c *Cli) diffCli() error {
+	c.app.Diff(*c.cmdDiffRepoArg, *c.cmdDiffTags...)
 	return nil
 }
 

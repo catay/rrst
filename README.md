@@ -35,6 +35,7 @@ The key goal of this tool is to keep it very lightweight and provide everything 
   * [rrst update](#rrst-update)
   * [rrst tag](#rrst-tag)
   * [rrst delete](#rrst-delete)
+  * [rrst diff](#rrst-diff)
   * [rrst server](#rrst-server)
 * [Design](#design)
 * [Roadmap](#roadmap)
@@ -472,6 +473,38 @@ $ rrst -c config.yaml tag CENTOS-7-6-X86_64-updates my_custom_tag 1546898144
 **Not implemented**. 
 This subcommand will delete repositories, revisions and tags.
 
+### rrst diff
+
+The diff command compares package versions between tagged revisions.
+It takes a repository name and a whitespace delimited list of tags.
+
+```bash
+$ rrst -c config.yaml diff CENTOS-7-6-X86_64-updates production test latest
+PACKAGE                           production     test                      latest
+libvncserver.i686                 -              -                         0.9.9-13.el7_6
+systemd.x86_64                    -              219-62.el7_6.2            219-62.el7_6.2
+elinks.x86_64                     -              0.12-0.37.pre6.el7.0.1    0.12-0.37.pre6.el7.0.1
+systemd-libs.x86_64               -              219-62.el7_6.2            219-62.el7_6.2
+libvncserver.x86_64               -              -                         0.9.9-13.el7_6
+libgudev1.i686                    -              219-62.el7_6.2            219-62.el7_6.2
+tzdata.noarch                     2018g-1.el7    2018i-1.el7               2018i-1.el7
+tzdata-java.noarch                2018g-1.el7    2018i-1.el7               2018i-1.el7
+systemd-python.x86_64             -              219-62.el7_6.2            219-62.el7_6.2
+systemd-devel.i686                -              219-62.el7_6.2            219-62.el7_6.2
+systemd-networkd.x86_64           -              219-62.el7_6.2            219-62.el7_6.2
+libgudev1.x86_64                  -              219-62.el7_6.2            219-62.el7_6.2
+libgudev1-devel.x86_64            -              219-62.el7_6.2            219-62.el7_6.2
+systemd-sysv.x86_64               -              219-62.el7_6.2            219-62.el7_6.2
+systemd-devel.x86_64              -              219-62.el7_6.2            219-62.el7_6.2
+libvncserver-devel.x86_64         -              -                         0.9.9-13.el7_6
+systemd-resolved.i686             -              219-62.el7_6.2            219-62.el7_6.2
+libgudev1-devel.i686              -              219-62.el7_6.2            219-62.el7_6.2
+systemd-journal-gateway.x86_64    -              219-62.el7_6.2            219-62.el7_6.2
+systemd-libs.i686                 -              219-62.el7_6.2            219-62.el7_6.2
+systemd-resolved.x86_64           -              219-62.el7_6.2            219-62.el7_6.2
+libvncserver-devel.i686           -              -                         0.9.9-13.el7_6
+```
+
 ### rrst server
 
 The server command starts a basic webserver on port 4280.
@@ -500,7 +533,6 @@ implementation.
 * Implement a locking mechanism when a repository update is in progress
 * Add metalink or mirrorlist support
 * Set HTTP user agent to a custom string
-* Implement diff functionality between two revisions
 * Add a credits file
 * Move all the repository management server-side and provide a REST API
 * Add and complete Go (Ginkgo) tests
