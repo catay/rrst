@@ -118,6 +118,37 @@ func (r *Repository) Tag(tagname string, revid int64, force bool) (bool, error) 
 	return true, nil
 }
 
+// The Diff method shows the package differences between tags.
+func (r *Repository) Diff(tags ...string) (map[string][]string, error) {
+	// check if tags exist, if not bail out.
+	for _, t := range tags {
+		if !r.isTag(t) {
+			return nil, fmt.Errorf("tag %s not found", t)
+		}
+	}
+
+	packageDiff := make(map[string][]string)
+
+	for i, t := range tags {
+		packages, err := r.getMetadataPackageList(r.tagByName(t).Revision)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, p := range packages {
+			verRel := p.Version.Ver + "-" + p.Version.Rel
+			packageName := p.Name + "." + p.Arch
+			if _, ok := packageDiff[packageName]; !ok {
+				packageDiff[packageName] = make([]string, len(tags))
+			}
+
+			packageDiff[packageName][i] = verRel
+		}
+	}
+
+	return packageDiff, nil
+}
+
 // RefreshState refreshes the underlying tag and revision state.
 // Under the hood it calls initState.
 func (r *Repository) RefreshState() {
