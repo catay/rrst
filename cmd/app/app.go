@@ -50,6 +50,19 @@ func (a *App) Create(action string) {
 	fmt.Println(action)
 }
 
+func (a *App) Status(repo string) {
+	if len(a.repositories) == 0 {
+		fmt.Println("No repositories configured.")
+		return
+	}
+
+	if repo != "" {
+		a.showRepo(repo)
+	} else {
+		a.showRepos()
+	}
+}
+
 func (a *App) List(repo string) {
 	if len(a.repositories) == 0 {
 		fmt.Println("No repositories configured.")

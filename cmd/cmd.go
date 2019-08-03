@@ -15,6 +15,7 @@ type Cli struct {
 	configFile       *string
 	verbose          *bool
 	cmdCreate        *kingpin.CmdClause
+	cmdStatus        *kingpin.CmdClause
 	cmdList          *kingpin.CmdClause
 	cmdUpdate        *kingpin.CmdClause
 	cmdTag           *kingpin.CmdClause
@@ -23,6 +24,7 @@ type Cli struct {
 	cmdServer        *kingpin.CmdClause
 	cmdTagForceFlag  *bool
 	cmdCreateRepoArg *string
+	cmdStatusRepoArg *string
 	cmdListRepoArg   *string
 	cmdUpdateRepoArg *string
 	cmdUpdateRevArg  *int64
@@ -44,6 +46,7 @@ func NewCli() *Cli {
 	c.configFile = c.Flag("config", "Path to alternate YAML configuration file.").Short('c').Default(app.DefaultConfig).String()
 	c.verbose = c.Flag("verbose", "Turn on verbose output. Default is verbose turned off.").Short('v').Bool()
 	c.cmdCreate = c.Command("create", "Create custom repositories. **NOT IMPLEMENTED**")
+	c.cmdStatus = c.Command("status", "Show status of repositories, revisions and tags.")
 	c.cmdList = c.Command("list", "List repositories, revisions and tags.")
 	c.cmdUpdate = c.Command("update", "Update repositories with upstream content.")
 	c.cmdTag = c.Command("tag", "Tag repository revisions.")
@@ -52,6 +55,7 @@ func NewCli() *Cli {
 	c.cmdServer = c.Command("server", "HTTP server serving repositories.")
 
 	c.cmdCreateRepoArg = c.cmdCreate.Arg("repo name", "Repository name.").String()
+	c.cmdStatusRepoArg = c.cmdStatus.Arg("repo name", "Repository name.").String()
 	c.cmdListRepoArg = c.cmdList.Arg("repo name", "Repository name.").String()
 	c.cmdUpdateRepoArg = c.cmdUpdate.Arg("repo name", "Repository to update.").String()
 	c.cmdUpdateRevArg = c.cmdUpdate.Arg("revision", "Revision to update.").Int64()
@@ -81,6 +85,8 @@ func (c *Cli) Run() error {
 	switch c.action {
 	case "create":
 		err = c.createCli()
+	case "status":
+		err = c.statusCli()
 	case "list":
 		err = c.listCli()
 	case "update":
@@ -100,6 +106,11 @@ func (c *Cli) Run() error {
 
 func (c *Cli) createCli() error {
 	c.app.Create(c.action)
+	return nil
+}
+
+func (c *Cli) statusCli() error {
+	c.app.Status(*c.cmdStatusRepoArg)
 	return nil
 }
 
