@@ -1,3 +1,8 @@
+
+* Release 0.4.0 (2019/08/04)
+  - The functionality of the list command is replaced by the status command.
+  - ( #9) Implement a list and diff command to show package version info.  
+  - (#17) Make the revision parameter mandatory with the tag command.
 * Release 0.3.0 (2019/05/08)
   - Improve versioning and build system.
   - Take into account deleted packages on the local filesystem.
@@ -5,15 +10,15 @@
   - Store the temporary SCC json file in os.TempDir().
   - Fix the date formatting in the list commmand.
 * Release 0.2.0 (2019/01/09)
-  - complete redesign of the tool
-  - built-in web server to serve RPM's
-  - implement staging through revisions and tags.
+  - Complete redesign of the tool.
+  - Built-in web server to serve RPM's.
+  - Implement staging through revisions and tags.
 * Release 0.1.0 (2018/08/05)
-  - support for repomd repo's with no authentication requirements
-  - support for SUSE SCC repo's which require a special form of authentication
-  - support download resume for partially downloaded packages
-  - environment variable support for storing the secret SCC registration code
+  - Support for repomd repo's with no authentication requirements.
+  - Support for SUSE SCC repo's which require a special form of authentication.
+  - Support download resume for partially downloaded packages.
+  - Environment variable support for storing the secret SCC registration code.
   - HTTP(s) proxy support
-  - staged or merged repo support
-  - include only selective package patterns for download (no dependency tracking)
-  - caches the repomd metadata
+  - Staged or merged repo support.
+  - Include only selective package patterns for download (no dependency tracking).
+  - Caches the repomd metadata.
