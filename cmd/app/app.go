@@ -50,7 +50,7 @@ func (a *App) Create(action string) {
 	fmt.Println(action)
 }
 
-func (a *App) List(repo string) {
+func (a *App) Status(repo string) {
 	if len(a.repositories) == 0 {
 		fmt.Println("No repositories configured.")
 		return
@@ -60,6 +60,34 @@ func (a *App) List(repo string) {
 		a.showRepo(repo)
 	} else {
 		a.showRepos()
+	}
+}
+
+func (a *App) List(repo string, tagsOrRevs ...string) {
+	if len(a.repositories) == 0 {
+		fmt.Println("No repositories configured.")
+		return
+	}
+
+	if r, ok := a.getRepoName(repo); ok {
+		// if only no tag or revision is provided, compare with latest tag
+		if len(tagsOrRevs) == 0 {
+			tagsOrRevs = append(tagsOrRevs, "latest")
+		}
+		packageMap, err := r.PackageVersions(tagsOrRevs...)
+		if err != nil {
+			fmt.Println("list error: ", err)
+			return
+		}
+
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0)
+		fmt.Fprintf(w, "PACKAGE\t%v\n", strings.Join(tagsOrRevs, "\t"))
+		for k, v := range packageMap {
+			fmt.Fprintf(w, "%v\t%v\n", k, strings.Join(v, "\t"))
+		}
+		w.Flush()
+	} else {
+		fmt.Println("No configured repository", repo, "found.")
 	}
 }
 
@@ -105,51 +133,40 @@ func (a *App) Tag(repo string, tag string, rev int64, force bool) {
 	}
 }
 
-func (a *App) Diff(repo string, tags ...string) {
+func (a *App) Diff(repo string, tagsOrRevs ...string) {
 	if len(a.repositories) == 0 {
 		fmt.Println("No repositories configured.")
 		return
 	}
 
-	if repo != "" {
-		if r, ok := a.getRepoName(repo); ok {
-			// if only 1 tag is provided, compare with latest tag
-			if len(tags) == 1 {
-				tags = append(tags, "latest")
-			}
-			diff, err := r.Diff(tags...)
-			if err != nil {
-				fmt.Println("diff error: ", err)
-				return
-			}
-
-			w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0)
-			fmt.Fprintf(w, "PACKAGE\t%v\n", strings.Join(tags, "\t"))
-			for k, v := range diff {
-				// only show packages with a different version in a tagged revision
-				var show bool
-				for _, a := range v[1:] {
-					if v[0] != a {
-						show = true
-						break
-					}
-				}
-
-				if show {
-					// set the version string to - when the package is not present in a
-					// tagged revision
-					for i := range v {
-						if v[i] == "" {
-							v[i] = "-"
-						}
-					}
-
-					fmt.Fprintf(w, "%v\t%v\n", k, strings.Join(v, "\t"))
-				}
-			}
-			w.Flush()
+	if r, ok := a.getRepoName(repo); ok {
+		// if only 1 tag is provided, compare with latest tag
+		if len(tagsOrRevs) == 1 {
+			tagsOrRevs = append(tagsOrRevs, "latest")
+		}
+		packageMap, err := r.PackageVersions(tagsOrRevs...)
+		if err != nil {
+			fmt.Println("diff error: ", err)
+			return
 		}
 
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0)
+		fmt.Fprintf(w, "PACKAGE\t%v\n", strings.Join(tagsOrRevs, "\t"))
+		for k, v := range packageMap {
+			// only show packages with a different version in a tagged revision
+			var show bool
+			for _, a := range v[1:] {
+				if v[0] != a {
+					show = true
+					break
+				}
+			}
+
+			if show {
+				fmt.Fprintf(w, "%v\t%v\n", k, strings.Join(v, "\t"))
+			}
+		}
+		w.Flush()
 	} else {
 		fmt.Println("No configured repository", repo, "found.")
 	}

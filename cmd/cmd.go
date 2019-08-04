@@ -10,29 +10,32 @@ import (
 
 type Cli struct {
 	*kingpin.Application
-	app              *app.App
-	action           string
-	configFile       *string
-	verbose          *bool
-	cmdCreate        *kingpin.CmdClause
-	cmdList          *kingpin.CmdClause
-	cmdUpdate        *kingpin.CmdClause
-	cmdTag           *kingpin.CmdClause
-	cmdDelete        *kingpin.CmdClause
-	cmdDiff          *kingpin.CmdClause
-	cmdServer        *kingpin.CmdClause
-	cmdTagForceFlag  *bool
-	cmdCreateRepoArg *string
-	cmdListRepoArg   *string
-	cmdUpdateRepoArg *string
-	cmdUpdateRevArg  *int64
-	cmdTagRepoArg    *string
-	cmdTagTagArg     *string
-	cmdTagRevArg     *int64
-	cmdDeleteRepoArg *string
-	cmdDiffRepoArg   *string
-	cmdDiffTags      *[]string
-	cmdServerPort    *string
+	app                  *app.App
+	action               string
+	configFile           *string
+	verbose              *bool
+	cmdCreate            *kingpin.CmdClause
+	cmdStatus            *kingpin.CmdClause
+	cmdList              *kingpin.CmdClause
+	cmdUpdate            *kingpin.CmdClause
+	cmdTag               *kingpin.CmdClause
+	cmdDelete            *kingpin.CmdClause
+	cmdDiff              *kingpin.CmdClause
+	cmdServer            *kingpin.CmdClause
+	cmdTagForceFlag      *bool
+	cmdCreateRepoArg     *string
+	cmdStatusRepoArg     *string
+	cmdListRepoArg       *string
+	cmdListTagsOrRevsArg *[]string
+	cmdUpdateRepoArg     *string
+	cmdUpdateRevArg      *int64
+	cmdTagRepoArg        *string
+	cmdTagTagArg         *string
+	cmdTagRevArg         *int64
+	cmdDeleteRepoArg     *string
+	cmdDiffRepoArg       *string
+	cmdDiffTagsOrRevsArg *[]string
+	cmdServerPort        *string
 }
 
 func NewCli() *Cli {
@@ -44,7 +47,8 @@ func NewCli() *Cli {
 	c.configFile = c.Flag("config", "Path to alternate YAML configuration file.").Short('c').Default(app.DefaultConfig).String()
 	c.verbose = c.Flag("verbose", "Turn on verbose output. Default is verbose turned off.").Short('v').Bool()
 	c.cmdCreate = c.Command("create", "Create custom repositories. **NOT IMPLEMENTED**")
-	c.cmdList = c.Command("list", "List repositories, revisions and tags.")
+	c.cmdStatus = c.Command("status", "Show status of repositories, revisions and tags.")
+	c.cmdList = c.Command("list", "List the packages of a repository.")
 	c.cmdUpdate = c.Command("update", "Update repositories with upstream content.")
 	c.cmdTag = c.Command("tag", "Tag repository revisions.")
 	c.cmdDelete = c.Command("delete", "Delete repositories. **NOT IMPLEMENTED**")
@@ -52,7 +56,10 @@ func NewCli() *Cli {
 	c.cmdServer = c.Command("server", "HTTP server serving repositories.")
 
 	c.cmdCreateRepoArg = c.cmdCreate.Arg("repo name", "Repository name.").String()
-	c.cmdListRepoArg = c.cmdList.Arg("repo name", "Repository name.").String()
+	c.cmdStatusRepoArg = c.cmdStatus.Arg("repo name", "Repository name.").String()
+	c.cmdListRepoArg = c.cmdList.Arg("repo name", "Repository name.").Required().String()
+	c.cmdListTagsOrRevsArg = c.cmdList.Arg("tag|revision", "Show the packages matching a specific set of tags or revisions.").Strings()
+
 	c.cmdUpdateRepoArg = c.cmdUpdate.Arg("repo name", "Repository to update.").String()
 	c.cmdUpdateRevArg = c.cmdUpdate.Arg("revision", "Revision to update.").Int64()
 
@@ -64,7 +71,7 @@ func NewCli() *Cli {
 	c.cmdDeleteRepoArg = c.cmdDelete.Arg("repo name", "Repository name.").String()
 
 	c.cmdDiffRepoArg = c.cmdDiff.Arg("repo name", "Repository name.").Required().String()
-	c.cmdDiffTags = c.cmdDiff.Arg("tag", "Compare package versions of whitespace delimited list of tags.").Required().Strings()
+	c.cmdDiffTagsOrRevsArg = c.cmdDiff.Arg("tag|revision", "Compare package versions between repository tags or revisions.").Required().Strings()
 
 	c.cmdServerPort = c.cmdServer.Flag("port", "Port number to listen on.").Short('p').Default(app.DefaultPort).String()
 	return c
@@ -81,6 +88,8 @@ func (c *Cli) Run() error {
 	switch c.action {
 	case "create":
 		err = c.createCli()
+	case "status":
+		err = c.statusCli()
 	case "list":
 		err = c.listCli()
 	case "update":
@@ -103,8 +112,13 @@ func (c *Cli) createCli() error {
 	return nil
 }
 
+func (c *Cli) statusCli() error {
+	c.app.Status(*c.cmdStatusRepoArg)
+	return nil
+}
+
 func (c *Cli) listCli() error {
-	c.app.List(*c.cmdListRepoArg)
+	c.app.List(*c.cmdListRepoArg, *c.cmdListTagsOrRevsArg...)
 	return nil
 }
 
@@ -119,7 +133,7 @@ func (c *Cli) tagCli() error {
 }
 
 func (c *Cli) diffCli() error {
-	c.app.Diff(*c.cmdDiffRepoArg, *c.cmdDiffTags...)
+	c.app.Diff(*c.cmdDiffRepoArg, *c.cmdDiffTagsOrRevsArg...)
 	return nil
 }
 
