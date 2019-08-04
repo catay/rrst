@@ -65,7 +65,7 @@ func NewCli() *Cli {
 
 	c.cmdTagRepoArg = c.cmdTag.Arg("repo name", "Repository name.").Required().String()
 	c.cmdTagTagArg = c.cmdTag.Arg("tag name", "Tag name.").Required().String()
-	c.cmdTagRevArg = c.cmdTag.Arg("revision", "Revision to tag.").Int64()
+	c.cmdTagRevArg = c.cmdTag.Arg("revision", "Revision to tag.").Required().Int64()
 	c.cmdTagForceFlag = c.cmdTag.Flag("force", "Force tag creation. Default is false.").Short('f').Bool()
 
 	c.cmdDeleteRepoArg = c.cmdDelete.Arg("repo name", "Repository name.").String()
