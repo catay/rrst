@@ -31,6 +31,7 @@ The key goal of this tool is to keep it very lightweight and provide everything 
 * [Command reference](#command-reference)
   * [rrst help](#rrst-help)
   * [rrst create](#rrst-create)
+  * [rrst status](#rrst-status)
   * [rrst list](#rrst-list)
   * [rrst update](#rrst-update)
   * [rrst tag](#rrst-tag)
@@ -419,23 +420,68 @@ Commands:
 **Not implemented**. 
 This subcommand will make it possible to create a local repository not tied to a remote one.
 
-### rrst list
+### rrst status
 
-The list command without arguments shows the status of the configured repositories.
+The status command without arguments shows the status of the configured repositories.
 
 ```bash
-$ rrst -c config.yaml list
+$ rrst -c config.yaml status
 ID    REPOSITORY                   ENABLED    #REVISIONS    #TAGS    UPDATED
-1     CENTOS-7-6-X86_64-updates    true       1             2        2019-1-7 22:55:44
+1     CENTOS-7-6-X86_64-updates    true       5             5        2019-08-02 14:25:00
+2     SLES-15-0-X86_64-updates     true       2             2        2019-08-04 11:52:39
+3     DUMMY-1-0-X86_64-updates     true       1             1        2019-01-21 20:16:22
 ```
 
 Providing the repository name as argument will show more detailed information
 about the available revisions and tags.
 
 ```bash
-$ rrst -c config.yaml list CENTOS-7-6-X86_64-updates
+$ rrst -c config.yaml status CENTOS-7-6-X86_64-updates
 REVISIONS     CREATED              TAGS
 1546898144    2019-1-7 22:55:44    latest, production
+REVISION      CREATED                TAGS
+1546898144    2019-01-07 22:55:44    prd 
+1547291211    2019-01-12 12:06:51    tst
+1547670979    2019-01-16 21:36:19    dev
+1547680849    2019-01-17 00:20:49    latest
+```
+
+### rrst list
+
+The list command shows the packages of a repository who are part of a set of tags or revisions.
+
+Example, list the packages of the **prd** and **latest** tags.
+
+```bash
+$ rrst -c config.yaml list CENTOS-7-6-X86_64-updates prd latest
+PACKAGE                                            prd                         latest
+NetworkManager-wifi.x86_64                         1.12.0-8.el7_6              1.12.0-8.el7_6
+fence-agents-drac5.x86_64                          4.2.1-11.el7_6.1            4.2.1-11.el7_6.1
+pcp-pmda-docker.x86_64                             4.1.0-5.el7_6               4.1.0-5.el7_6
+libvncserver.x86_64                                -                           0.9.9-13.el7_6
+pcp-export-pcp2zabbix.x86_64                       4.1.0-5.el7_6               4.1.0-5.el7_6
+libvncserver-devel.i686                            -                           0.9.9-13.el7_6
+cronie-anacron.x86_64                              1.4.11-20.el7_6             1.4.11-20.el7_6
+libguestfs-xfs.x86_64                              1.38.2-12.el7_6.1           1.38.2-12.el7_6.1
+xorg-x11-server-Xvfb.x86_64                        1.20.1-5.el7                1.20.1-5.el7
+...
+```
+
+It is also possible to list the packages of both tags and revisions.
+
+```bash
+$ rrst -c config.yaml list CENTOS-7-6-X86_64-updates 1547291211 dev
+PACKAGE                                            1547291211                  dev
+NetworkManager-glib-devel.i686                     1.12.0-8.el7_6              1.12.0-8.el7_6
+systemd-libs.x86_64                                -                           219-62.el7_6.2
+ruby-libs.x86_64                                   2.0.0.648-34.el7_6          2.0.0.648-34.el7_6
+pcp.x86_64                                         4.1.0-5.el7_6               4.1.0-5.el7_6
+java-1.7.0-openjdk-demo.x86_64                     1.7.0.201-2.6.16.1.el7_6    1.7.0.201-2.6.16.1.el7_6
+java-1.8.0-openjdk-devel.x86_64                    1.8.0.191.b12-1.el7_6       1.8.0.191.b12-1.el7_6
+ghostscript-devel.i686                             9.07-31.el7_6.6             9.07-31.el7_6.6
+pacemaker-remote.x86_64                            1.1.19-8.el7_6.2            1.1.19-8.el7_6.2
+pcp-webapi.x86_64                                  4.1.0-5.el7_6               4.1.0-5.el7_6
+...
 ```
 
 ### rrst update
@@ -475,8 +521,9 @@ This subcommand will delete repositories, revisions and tags.
 
 ### rrst diff
 
-The diff command compares package versions between tagged revisions.
-It takes a repository name and a whitespace delimited list of tags.
+The diff command compares package versions between tags or revisions.
+It takes a repository name and a whitespace delimited list of tags or revisions.
+
 
 ```bash
 $ rrst -c config.yaml diff CENTOS-7-6-X86_64-updates production test latest
