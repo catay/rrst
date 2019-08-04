@@ -10,31 +10,32 @@ import (
 
 type Cli struct {
 	*kingpin.Application
-	app              *app.App
-	action           string
-	configFile       *string
-	verbose          *bool
-	cmdCreate        *kingpin.CmdClause
-	cmdStatus        *kingpin.CmdClause
-	cmdList          *kingpin.CmdClause
-	cmdUpdate        *kingpin.CmdClause
-	cmdTag           *kingpin.CmdClause
-	cmdDelete        *kingpin.CmdClause
-	cmdDiff          *kingpin.CmdClause
-	cmdServer        *kingpin.CmdClause
-	cmdTagForceFlag  *bool
-	cmdCreateRepoArg *string
-	cmdStatusRepoArg *string
-	cmdListRepoArg   *string
-	cmdUpdateRepoArg *string
-	cmdUpdateRevArg  *int64
-	cmdTagRepoArg    *string
-	cmdTagTagArg     *string
-	cmdTagRevArg     *int64
-	cmdDeleteRepoArg *string
-	cmdDiffRepoArg   *string
-	cmdDiffTags      *[]string
-	cmdServerPort    *string
+	app                  *app.App
+	action               string
+	configFile           *string
+	verbose              *bool
+	cmdCreate            *kingpin.CmdClause
+	cmdStatus            *kingpin.CmdClause
+	cmdList              *kingpin.CmdClause
+	cmdUpdate            *kingpin.CmdClause
+	cmdTag               *kingpin.CmdClause
+	cmdDelete            *kingpin.CmdClause
+	cmdDiff              *kingpin.CmdClause
+	cmdServer            *kingpin.CmdClause
+	cmdTagForceFlag      *bool
+	cmdCreateRepoArg     *string
+	cmdStatusRepoArg     *string
+	cmdListRepoArg       *string
+	cmdListTagsOrRevsArg *[]string
+	cmdUpdateRepoArg     *string
+	cmdUpdateRevArg      *int64
+	cmdTagRepoArg        *string
+	cmdTagTagArg         *string
+	cmdTagRevArg         *int64
+	cmdDeleteRepoArg     *string
+	cmdDiffRepoArg       *string
+	cmdDiffTags          *[]string
+	cmdServerPort        *string
 }
 
 func NewCli() *Cli {
@@ -47,7 +48,7 @@ func NewCli() *Cli {
 	c.verbose = c.Flag("verbose", "Turn on verbose output. Default is verbose turned off.").Short('v').Bool()
 	c.cmdCreate = c.Command("create", "Create custom repositories. **NOT IMPLEMENTED**")
 	c.cmdStatus = c.Command("status", "Show status of repositories, revisions and tags.")
-	c.cmdList = c.Command("list", "List repositories, revisions and tags.")
+	c.cmdList = c.Command("list", "List the packages of a repository.")
 	c.cmdUpdate = c.Command("update", "Update repositories with upstream content.")
 	c.cmdTag = c.Command("tag", "Tag repository revisions.")
 	c.cmdDelete = c.Command("delete", "Delete repositories. **NOT IMPLEMENTED**")
@@ -56,7 +57,9 @@ func NewCli() *Cli {
 
 	c.cmdCreateRepoArg = c.cmdCreate.Arg("repo name", "Repository name.").String()
 	c.cmdStatusRepoArg = c.cmdStatus.Arg("repo name", "Repository name.").String()
-	c.cmdListRepoArg = c.cmdList.Arg("repo name", "Repository name.").String()
+	c.cmdListRepoArg = c.cmdList.Arg("repo name", "Repository name.").Required().String()
+	c.cmdListTagsOrRevsArg = c.cmdList.Arg("tag|revision", "Show the packages matching a specific set of tags or revisions.").Strings()
+
 	c.cmdUpdateRepoArg = c.cmdUpdate.Arg("repo name", "Repository to update.").String()
 	c.cmdUpdateRevArg = c.cmdUpdate.Arg("revision", "Revision to update.").Int64()
 
@@ -115,7 +118,7 @@ func (c *Cli) statusCli() error {
 }
 
 func (c *Cli) listCli() error {
-	c.app.List(*c.cmdListRepoArg)
+	c.app.List(*c.cmdListRepoArg, *c.cmdListTagsOrRevsArg...)
 	return nil
 }
 

@@ -118,6 +118,61 @@ func (r *Repository) Tag(tagname string, revid int64, force bool) (bool, error) 
 	return true, nil
 }
 
+// The PackageVersions method returns a hash with the package.arch name
+// as key and an array with the latest package version per tag or
+// revision.
+func (r *Repository) PackageVersions(tagsOrRevs ...string) (map[string][]string, error) {
+	// check if tags exist, if not bail out.
+	for _, t := range tagsOrRevs {
+		if !r.isTagOrRevId(t) {
+			return nil, fmt.Errorf("tag or revision %s not found", t)
+		}
+	}
+
+	packageMap := make(map[string][]string)
+
+	for i, t := range tagsOrRevs {
+
+		var rev *Revision
+
+		if r.isTag(t) {
+			rev = r.tagByName(t).Revision
+
+		} else {
+			// FIXME: no error checking for Atoi() can end badly.
+			id, _ := strconv.Atoi(t)
+			rev = r.revisionById(int64(id))
+		}
+
+		packages, err := r.getMetadataPackageList(rev)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, p := range packages {
+			verRel := p.Version.Ver + "-" + p.Version.Rel
+			packageName := p.Name + "." + p.Arch
+			if _, ok := packageMap[packageName]; !ok {
+				packageMap[packageName] = make([]string, len(tagsOrRevs))
+			}
+
+			packageMap[packageName][i] = verRel
+		}
+	}
+
+	// set the version string to - when the package is not present in a
+	// tagged revision
+	for _, v := range packageMap {
+		for i := range v {
+			if v[i] == "" {
+				v[i] = "-"
+			}
+		}
+	}
+
+	return packageMap, nil
+}
+
 // The Diff method shows the package differences between tags.
 func (r *Repository) Diff(tags ...string) (map[string][]string, error) {
 	// check if tags exist, if not bail out.
@@ -283,6 +338,20 @@ func (r *Repository) isRevision(rev *Revision) bool {
 	return false
 }
 
+// The isRevId method returns true if revision id exists,
+// false if the revision id doesn't exist.
+func (r *Repository) isRevId(revId string) bool {
+
+	// FIXME: no error checking for Atoi() can end badly.
+	ri, _ := strconv.Atoi(revId)
+
+	if rev := r.revisionById(int64(ri)); rev != nil {
+		return true
+	}
+
+	return false
+}
+
 // The getRevisionDir method returns the full revision directory path.
 func (r *Repository) getRevisionDir(rev *Revision) string {
 	revisionDir := r.ContentMDPath + "/" + fmt.Sprintf("%v", rev.Id)
@@ -405,6 +474,20 @@ func (r *Repository) isTag(tagname string) bool {
 		return false
 	}
 	return true
+}
+
+// The isTagOrRevId returns true if the provided value is an existing tag or
+// revision. Returns false when not.
+func (r *Repository) isTagOrRevId(value string) bool {
+
+	ok := false
+
+	if r.isTag(value) || r.isRevId(value) {
+		ok = true
+	}
+
+	return ok
+
 }
 
 // isValidTagName checks if the tag name matches the pattern and

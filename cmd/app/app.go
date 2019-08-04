@@ -63,16 +63,31 @@ func (a *App) Status(repo string) {
 	}
 }
 
-func (a *App) List(repo string) {
+func (a *App) List(repo string, tagsOrRevs ...string) {
 	if len(a.repositories) == 0 {
 		fmt.Println("No repositories configured.")
 		return
 	}
 
-	if repo != "" {
-		a.showRepo(repo)
+	if r, ok := a.getRepoName(repo); ok {
+		// if only no tag or revision is provided, compare with latest tag
+		if len(tagsOrRevs) == 0 {
+			tagsOrRevs = append(tagsOrRevs, "latest")
+		}
+		packageMap, err := r.PackageVersions(tagsOrRevs...)
+		if err != nil {
+			fmt.Println("list error: ", err)
+			return
+		}
+
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0)
+		fmt.Fprintf(w, "PACKAGE\t%v\n", strings.Join(tagsOrRevs, "\t"))
+		for k, v := range packageMap {
+			fmt.Fprintf(w, "%v\t%v\n", k, strings.Join(v, "\t"))
+		}
+		w.Flush()
 	} else {
-		a.showRepos()
+		fmt.Println("No configured repository", repo, "found.")
 	}
 }
 
