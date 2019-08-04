@@ -34,7 +34,7 @@ type Cli struct {
 	cmdTagRevArg         *int64
 	cmdDeleteRepoArg     *string
 	cmdDiffRepoArg       *string
-	cmdDiffTags          *[]string
+	cmdDiffTagsOrRevsArg *[]string
 	cmdServerPort        *string
 }
 
@@ -71,7 +71,7 @@ func NewCli() *Cli {
 	c.cmdDeleteRepoArg = c.cmdDelete.Arg("repo name", "Repository name.").String()
 
 	c.cmdDiffRepoArg = c.cmdDiff.Arg("repo name", "Repository name.").Required().String()
-	c.cmdDiffTags = c.cmdDiff.Arg("tag", "Compare package versions of whitespace delimited list of tags.").Required().Strings()
+	c.cmdDiffTagsOrRevsArg = c.cmdDiff.Arg("tag|revision", "Compare package versions between repository tags or revisions.").Required().Strings()
 
 	c.cmdServerPort = c.cmdServer.Flag("port", "Port number to listen on.").Short('p').Default(app.DefaultPort).String()
 	return c
@@ -133,7 +133,7 @@ func (c *Cli) tagCli() error {
 }
 
 func (c *Cli) diffCli() error {
-	c.app.Diff(*c.cmdDiffRepoArg, *c.cmdDiffTags...)
+	c.app.Diff(*c.cmdDiffRepoArg, *c.cmdDiffTagsOrRevsArg...)
 	return nil
 }
 
