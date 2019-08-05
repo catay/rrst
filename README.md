@@ -399,17 +399,23 @@ Commands:
   create [<repo name>]
     Create custom repositories. **NOT IMPLEMENTED**
 
-  list [<repo name>]
-    List repositories, revisions and tags.
+  status [<repo name>]
+    Show status of repositories, revisions and tags.
+
+  list <repo name> [<tag|revision>...]
+    List the packages of a repository.
 
   update [<repo name>] [<revision>]
     Update repositories with upstream content.
 
-  tag [<flags>] <repo name> <tag name> [<revision>]
+  tag [<flags>] <repo name> <tag name> <revision>
     Tag repository revisions.
 
   delete [<repo name>]
     Delete repositories. **NOT IMPLEMENTED**
+
+  diff <repo name> <tag|revision>...
+    Show package differences between repository tags.
 
   server [<flags>]
     HTTP server serving repositories.
