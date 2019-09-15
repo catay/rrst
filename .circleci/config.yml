@@ -3,16 +3,9 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.9
+      - image: circleci/golang:1.13
     working_directory: /go/src/github.com/catay/rrst
     steps:
       - checkout
-      # Install Go dependency management tool
-      - run: 
-          name: install dep
-          command: |
-            curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-      # Run dep ensure to satisfy the build dependencies
-      - run: dep ensure -v
       # Build the project 
-      - run: go build -v
+      - run: make

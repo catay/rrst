@@ -55,115 +55,82 @@ Precompiled binaries are available for each release at the
 Fetch the archive.
 
 ```bash
-$ wget https://github.com/catay/rrst/releases/download/0.2.0/rrst-0.2.0.tar.gz
+$ wget https://github.com/catay/rrst/releases/download/0.4.0/rrst-0.4.0.tar.gz
 ```
 
 Extract the archive which contain the rrst binary.
 
 ```bash
-$ tar xzf rrst-0.2.0.tar.gz
+$ tar xzf rrst-0.4.0.tar.gz
+```
+
+Test out the unpacked rrst binary.
+
+```bash
+$ ./rrst --version
+rrst 0.4.0 (1ae069f92073594f557cbb7af09f5689ff9df797)
 ```
 
 RPM or DEB packages will be provided in the future.
 
 ### Build from source
 
-Compiling the binary requires setting up the [Go tools](https://golang.org/doc/install).
+There are a few prerequisites when building from source:
 
-We will cover a quick standard Go install into `${HOME}` to get rrst build from source.
+* Install the [Go tools](https://golang.org/doc/install).
+* Install [GNU Make](https://www.gnu.org/software/make/).
 
-Download the latest Go binary release in `${HOME}`.
+1. Clone the upstream rrst Git repository.
 
-```bash
-$ wget https://dl.google.com/go/go1.11.4.linux-amd64.tar.gz
-```
+   ```bash
+   $ git clone https://github.com/catay/rrst.git
+   ```
 
-Extract the tarball into the `tmp` directory. 
+2. Run `make` to build the rrst tool.
 
-```bash
-$ tar -C /var/tmp -xzf go1.11.4.linux-amd64.tar.gz
-```
+   ```bash
+   $ cd rrst && make
+   ```
+3. Test the build.
 
-Create a Go workspace directory in `${HOME}` and copy the binary.
+   ```bash
+   $ ./rrst --version
+   rrst x.x.x (8159eb12e14f0e4820d751e3535c34947861aa4c)
+   ```
 
-```bash
-$ mkdir -p ${HOME}/go/{bin,src}
-$ cp /var/tmp/go/bin/go ${HOME}/go/bin
-```
-
-Add the Go binary path to `${PATH}`.
-
-```bash
-$ export PATH=${PATH}:${HOME}/go/bin
-```
-
-We also require [dep](https://golang.github.io/dep/), the Go dependency management tool.
-
-Download the latest dep binary release in `${HOME}`.
-This will also automatically move the binary into `${HOME}/go/bin`.
-
-```bash
-$ curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-```
-
-We are all set now to build the rrst tool.
-The first step is to download the source code in the right spot. 
-
-```bash
-$ cd ${HOME}/go/src
-$ git clone https://github.com/catay/rrst.git
-```
-
-Run `make` to build the rrst tool.
-This might take a while as it will also fetch all dependencies.
-
-```bash
-$ cd ${HOME}/go/src/rrst && make
-```
-
-A successful build results in a rrst binary in the current directory.
-
-```bash
-$ ./rrst --version
-0.1.0
-```
+> **Note:** An unofficial release build will have a x.x.x version.
 
 ### Build with Docker
 
 The binary can also be build inside a Docker container if Go is not 
 installed on the local system.
 
-Clone the source code from GitHub.
+1. Clone the source code from GitHub.
 
-```bash
-$ git clone git@github.com:catay/rrst.git && cd rrst
-```
-Build the image from the Dockerfile.
+   ```bash
+   $ git clone git@github.com:catay/rrst.git && cd rrst
+   ```
+2. Build the image from the Dockerfile.
 
-```bash
-$ docker build -t rrst .
-```
+   ```bash
+   $ docker build -t rrst .
+   ```
 
-Spin up the container based on the image previously created.
+3. Spin up the container based on the image previously created.
 
-```bash
-docker run rrst rrst --version
-```
+   ```bash
+   docker run rrst rrst --version
+   ```
+4. Copy the binary from the container to the local filesystem.  
 
-Copy the binary from the container to the local filesystem path `/var/tmp/rrst`.  
-There are better ways on how to do this, but this will avoid any SELinux hassle with shared volumes.
+   ```bash
+   $ docker cp <CONTAINER ID>:/go/src/app/rrst /var/tmp/rrst
 
-Replace in the below snippets `<CONTAINER ID>` with the id provided in `docker container ls -a`.
+5. Remove the container.
 
-```bash
-$ docker cp <CONTAINER ID>:/go/src/app/rrst /var/tmp/rrst
-```
-
-Remove the container.
-
-```bash
-$ docker rm <CONTAINER ID>
-```
+   ```bash
+   $ docker rm <CONTAINER ID>
+   ```
 
 ## How it works
 

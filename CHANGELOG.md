@@ -1,4 +1,5 @@
-
+* Release x.x.x (xxxx/xx/xx)
+  - Migrate dependency management to Go Modules.
 * Release 0.4.0 (2019/08/04)
   - The functionality of the list command is replaced by the status command.
   - ( #9) Implement a list and diff command to show package version info.  
