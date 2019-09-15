@@ -16,21 +16,18 @@ RELEASE_LDFLAGS=-ldflags "-X $(IMPORTPATH)/$(TARGET)/version.Version=$(VERSION) 
 # go source files, ignore vendor directory
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
-.PHONY:        build dep clean $(TARGET)
+.PHONY:        build clean $(TARGET)
 
-build: dep $(TARGET)
+build: $(TARGET)
 
-dep:
-	@dep ensure
-
-release: dep $(SRC)
+release: $(SRC)
  ifeq ($(CURRENT_COMMIT), $(RELEASE_COMMIT))
 	@go build $(RELEASE_LDFLAGS) -o $(TARGET)
  else
 	@echo "Current and tagged version commit hash don't match. Do nothing !!"
  endif
 
-$(TARGET): dep $(SRC)
+$(TARGET): $(SRC)
 	@go build $(CURRENT_LDFLAGS) -o $(TARGET)
 
 clean:

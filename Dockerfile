@@ -1,12 +1,10 @@
-FROM golang:1.9
+FROM circleci/golang:1.13
 
-WORKDIR /go/src/rrst
-ENV PATH="${PATH}:/go/src/rrst"
+WORKDIR /go/src/github.com/catay/rrst
+ENV PATH="${PATH}:/go/src/github.com/catay/rrst"
+USER root
 
-RUN git clone https://github.com/catay/rrst.git /go/src/rrst/
-RUN curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh 
+RUN git clone https://github.com/catay/rrst.git .
 RUN make
 
 CMD ["rrst"]
-
-
