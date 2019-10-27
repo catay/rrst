@@ -646,16 +646,16 @@ func (r *Repository) updateFromLocal(rev int64) (*Revision, error) {
 }
 
 // refreshLocalMetadata creates new metadata for a revision.
-// FIXME: remove hardcoded call to creatrepo and create a wrapper
-// around it so it both checks for createrepo_c and createrepo.
 func (r *Repository) refreshLocalMetadata(revision *Revision) error {
 	if err := r.createRevisionDir(revision); err != nil {
 		return fmt.Errorf("revision creation failed: %s", err)
 	}
+	return r.createRepo(r.getRevisionDir(revision), r.ContentFilesPath)
+}
 
-	//_, err := exec.Command("/usr/bin/createrepo_c", "-o", r.getRevisionDir(revision), r.ContentFilesPath).Output()
-	_, err := exec.Command("/usr/bin/createrepo", "-o", r.getRevisionDir(revision), r.ContentFilesPath).Output()
-
+// createRepo executes the createrepo command to refresh the metadata.
+func (r *Repository) createRepo(outputDir string, contentDir string) error {
+	_, err := exec.Command(config.CreateRepoCmd(), config.CreateRepoOpts, outputDir, contentDir).Output()
 	return err
 }
 
