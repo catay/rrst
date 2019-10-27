@@ -410,8 +410,6 @@ about the available revisions and tags.
 
 ```bash
 $ rrst -c config.yaml status CENTOS-7-6-X86_64-updates
-REVISIONS     CREATED              TAGS
-1546898144    2019-1-7 22:55:44    latest, production
 REVISION      CREATED                TAGS
 1546898144    2019-01-07 22:55:44    prd 
 1547291211    2019-01-12 12:06:51    tst
