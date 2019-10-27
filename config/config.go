@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/catay/rrst/util/file"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -20,7 +21,13 @@ const (
 	DefaultContentTmpPathSuffix   = "tmp"
 	DefaultContentTagsPathSuffix  = "tags"
 	ContentPathEnv                = "RRST_CONTENT_PATH"
+	CreateRepoOpts                = "-o"
 )
+
+var createRepoPaths = []string{
+	"/usr/bin/createrepo_c",
+	"/usr/bin/createrepo",
+}
 
 // Config is the top-level configuration for rrst.
 type Config struct {
@@ -179,4 +186,10 @@ func IsEnvVar(v string) bool {
 		return true
 	}
 	return false
+}
+
+// CreateRepoCmd returns the path to the first existing createrepo
+// binary. If not found, the latest entry is returned as default.
+func CreateRepoCmd() string {
+	return file.FirstExistingFile(createRepoPaths)
 }

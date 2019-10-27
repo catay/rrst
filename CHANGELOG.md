@@ -1,4 +1,5 @@
 * Release x.x.x (xxxx/xx/xx)
+  - Add support for both the createrepo (Python) and createrepo_c (C) command.
   - Migrate dependency management to Go Modules.
 * Release 0.4.0 (2019/08/04)
   - The functionality of the list command is replaced by the status command.
