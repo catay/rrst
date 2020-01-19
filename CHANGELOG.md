@@ -1,4 +1,5 @@
 * Release x.x.x (xxxx/xx/xx)
+  - (#22) Change default config location to /etc/rrst/config.yaml.
   - Add support for both the createrepo (Python) and createrepo_c (C) command.
   - Migrate dependency management to Go Modules.
 * Release 0.4.0 (2019/08/04)
