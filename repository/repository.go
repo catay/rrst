@@ -118,6 +118,42 @@ func (r *Repository) Tag(tagname string, revid int64, force bool) (bool, error) 
 	return true, nil
 }
 
+// The Delete method deletes the content of a whole repository or from a
+// specific revision.
+func (r *Repository) Delete(revid int64, force bool) (bool, error) {
+
+	if !r.HasRevisions() {
+		fmt.Println("No repository revisions to delete.")
+		return false, nil
+	}
+
+	// No revision provided, delete all revisions.
+	if revid == 0 {
+		for _, rev := range r.Revisions {
+			if err := r.deleteRevisionDir(rev); err != nil {
+				return false, fmt.Errorf("Deleting revision %v failed: %v.", revid, err)
+			} else {
+				fmt.Printf("Deleting revision %v\n", rev.Id)
+			}
+		}
+		return true, nil
+	}
+
+	// Check if there is a matching revision with the give revid.
+	// If not, bail out.
+	rev := r.revisionById(revid)
+	if rev == nil {
+		return false, fmt.Errorf("Revision %v not found.", revid)
+	}
+
+	if err := r.deleteRevisionDir(rev); err != nil {
+		return false, fmt.Errorf("Deleting revision %v failed: %v.", revid, err)
+	}
+
+	fmt.Printf("Deleting revision %v\n", rev.Id)
+	return true, nil
+}
+
 // The PackageVersions method returns a hash with the package.arch name
 // as key and an array with the latest package version per tag or
 // revision.
@@ -393,6 +429,25 @@ func (r *Repository) createRevisionDir(rev *Revision) error {
 	revisionDir := r.getRevisionDir(rev) + "/repodata"
 
 	if err := os.MkdirAll(revisionDir, 0700); err != nil {
+		return err
+	}
+	return nil
+}
+
+// The deleteRevisionDir method deletes the revision directory and tag
+// symbolic links under the metadata structure.
+func (r *Repository) deleteRevisionDir(rev *Revision) error {
+	revisionDir := r.getRevisionDir(rev)
+
+	// Remove the tag symbolic links linked to this revision first.
+	for _, tag := range rev.Tags {
+		if err := os.Remove(r.ContentTagsPath + "/" + tag.Name); err != nil {
+			return err
+		}
+	}
+
+	// Remove the revision directory.
+	if err := os.RemoveAll(revisionDir); err != nil {
 		return err
 	}
 	return nil
