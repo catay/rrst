@@ -121,36 +121,38 @@ func (r *Repository) Tag(tagname string, revid int64, force bool) (bool, error) 
 // The Delete method deletes the content of a whole repository or from a
 // specific revision.
 func (r *Repository) Delete(revid int64, force bool) (bool, error) {
+	var revisions []*Revision
 
 	if !r.HasRevisions() {
 		fmt.Println("No repository revisions to delete.")
 		return false, nil
 	}
 
-	// No revision provided, delete all revisions.
+	// If no revision provided, delete all revisions, else only
+	// delete the provided revision when existing.
 	if revid == 0 {
-		for _, rev := range r.Revisions {
-			if err := r.deleteRevisionDir(rev); err != nil {
-				return false, fmt.Errorf("Deleting revision %v failed: %v.", revid, err)
-			} else {
-				fmt.Printf("Deleting revision %v\n", rev.Id)
-			}
+		revisions = r.Revisions
+	} else {
+		// Check if there is a matching revision with the give revid.
+		// If not, bail out.
+		rev := r.revisionById(revid)
+		if rev == nil {
+			return false, fmt.Errorf("Revision %v not found.", revid)
 		}
-		return true, nil
+
+		revisions = append(revisions, rev)
 	}
 
-	// Check if there is a matching revision with the give revid.
-	// If not, bail out.
-	rev := r.revisionById(revid)
-	if rev == nil {
-		return false, fmt.Errorf("Revision %v not found.", revid)
+	for _, rev := range revisions {
+		if err := r.deleteRevisionDir(rev); err != nil {
+			return false, fmt.Errorf("Deleting revision %v failed: %v.", revid, err)
+		} else {
+			fmt.Printf("Deleting revision %v\n", rev.Id)
+		}
 	}
 
-	if err := r.deleteRevisionDir(rev); err != nil {
-		return false, fmt.Errorf("Deleting revision %v failed: %v.", revid, err)
-	}
+	r.tagLatestRevision("latest")
 
-	fmt.Printf("Deleting revision %v\n", rev.Id)
 	return true, nil
 }
 
@@ -421,6 +423,20 @@ func (r *Repository) isLatestRevision(rev *Revision) bool {
 		return true
 	}
 	return false
+}
+
+// The tagLatestRevision method tags the latest revision if available.
+func (r *Repository) tagLatestRevision(tagname string) error {
+	r.initState()
+
+	revision, ok := r.getLatestRevision()
+	if !ok {
+		return fmt.Errorf("No latest repository revision to tag.")
+	}
+
+	_, err := r.Tag(tagname, revision.Id, true)
+
+	return err
 }
 
 // The createRevisionDir method creates the revision directory under
