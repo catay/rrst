@@ -71,7 +71,7 @@ func (r *Repository) Update(rev int64) (bool, error) {
 	r.initState()
 
 	if r.isLatestRevision(revision) {
-		return r.Tag("latest", revision.Id, true)
+		return r.Tag(config.DefaultLatestRevisionTag, revision.Id, true)
 	}
 
 	return true, nil
@@ -151,7 +151,7 @@ func (r *Repository) Delete(revid int64, force bool) (bool, error) {
 		}
 	}
 
-	r.tagLatestRevision("latest")
+	r.tagLatestRevision(config.DefaultLatestRevisionTag)
 
 	return true, nil
 }
