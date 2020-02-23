@@ -48,7 +48,6 @@ func NewRepository(repoConfig *config.RepositoryConfig) (*Repository, error) {
 // The Update method fetches the metadata and packages from upstream and
 // stores it locally.
 func (r *Repository) Update(rev int64) (bool, error) {
-	var revision *Revision
 	var err error
 
 	// If repo is disabled, do nothing on update
@@ -59,22 +58,16 @@ func (r *Repository) Update(rev int64) (bool, error) {
 	// If remote URL is empty, assume a local repo, else
 	// assume there is a linked upstream repo
 	if r.RemoteURI == "" {
-		revision, err = r.updateFromLocal(rev)
+		_, err = r.updateFromLocal(rev)
 	} else {
-		revision, err = r.updateFromRemote(rev)
+		_, err = r.updateFromRemote(rev)
 	}
 
 	if err != nil {
 		return false, err
 	}
 
-	r.initState()
-
-	if r.isLatestRevision(revision) {
-		return r.Tag("latest", revision.Id, true)
-	}
-
-	return true, nil
+	return r.tagLatestRevision(config.DefaultLatestRevisionTag)
 }
 
 // The Tag method creates a tag symlink to the specified revision.
@@ -114,6 +107,44 @@ func (r *Repository) Tag(tagname string, revid int64, force bool) (bool, error) 
 	if err := os.Symlink(revpath, tagpath); err != nil {
 		return false, err
 	}
+
+	return true, nil
+}
+
+// The Delete method deletes the content of a whole repository or from a
+// specific revision.
+func (r *Repository) Delete(revid int64, force bool) (bool, error) {
+	var revisions []*Revision
+
+	if !r.HasRevisions() {
+		fmt.Println("No repository revisions to delete.")
+		return false, nil
+	}
+
+	// If no revision provided, delete all revisions, else only
+	// delete the provided revision when existing.
+	if revid == 0 {
+		revisions = r.Revisions
+	} else {
+		// Check if there is a matching revision with the give revid.
+		// If not, bail out.
+		rev := r.revisionById(revid)
+		if rev == nil {
+			return false, fmt.Errorf("Revision %v not found.", revid)
+		}
+
+		revisions = append(revisions, rev)
+	}
+
+	for _, rev := range revisions {
+		if err := r.deleteRevisionDir(rev); err != nil {
+			return false, fmt.Errorf("Deleting revision %v failed: %v.", revid, err)
+		} else {
+			fmt.Printf("Deleting revision %v\n", rev.Id)
+		}
+	}
+
+	r.tagLatestRevision(config.DefaultLatestRevisionTag)
 
 	return true, nil
 }
@@ -387,12 +418,43 @@ func (r *Repository) isLatestRevision(rev *Revision) bool {
 	return false
 }
 
+// The tagLatestRevision method tags the latest revision if available.
+func (r *Repository) tagLatestRevision(tagname string) (bool, error) {
+	r.initState()
+
+	revision, ok := r.getLatestRevision()
+	if !ok {
+		return ok, fmt.Errorf("No latest repository revision to tag.")
+	}
+
+	return r.Tag(tagname, revision.Id, true)
+}
+
 // The createRevisionDir method creates the revision directory under
 // the metadata structure.
 func (r *Repository) createRevisionDir(rev *Revision) error {
 	revisionDir := r.getRevisionDir(rev) + "/repodata"
 
 	if err := os.MkdirAll(revisionDir, 0700); err != nil {
+		return err
+	}
+	return nil
+}
+
+// The deleteRevisionDir method deletes the revision directory and tag
+// symbolic links under the metadata structure.
+func (r *Repository) deleteRevisionDir(rev *Revision) error {
+	revisionDir := r.getRevisionDir(rev)
+
+	// Remove the tag symbolic links linked to this revision first.
+	for _, tag := range rev.Tags {
+		if err := os.Remove(r.ContentTagsPath + "/" + tag.Name); err != nil {
+			return err
+		}
+	}
+
+	// Remove the revision directory.
+	if err := os.RemoveAll(revisionDir); err != nil {
 		return err
 	}
 	return nil

@@ -20,6 +20,7 @@ const (
 	DefaultContentMDPathSuffix    = "metadata"
 	DefaultContentTmpPathSuffix   = "tmp"
 	DefaultContentTagsPathSuffix  = "tags"
+	DefaultLatestRevisionTag      = "latest"
 	ContentPathEnv                = "RRST_CONTENT_PATH"
 	CreateRepoOpts                = "-o"
 )

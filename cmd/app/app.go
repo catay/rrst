@@ -72,7 +72,7 @@ func (a *App) List(repo string, tagsOrRevs ...string) {
 	if r, ok := a.getRepoName(repo); ok {
 		// if only no tag or revision is provided, compare with latest tag
 		if len(tagsOrRevs) == 0 {
-			tagsOrRevs = append(tagsOrRevs, "latest")
+			tagsOrRevs = append(tagsOrRevs, config.DefaultLatestRevisionTag)
 		}
 		packageMap, err := r.PackageVersions(tagsOrRevs...)
 		if err != nil {
@@ -133,6 +133,24 @@ func (a *App) Tag(repo string, tag string, rev int64, force bool) {
 	}
 }
 
+func (a *App) Delete(repo string, rev int64, force bool) {
+	if len(a.repositories) == 0 {
+		fmt.Println("No repositories configured.")
+		return
+	}
+
+	if repo != "" {
+		if r, ok := a.getRepoName(repo); ok {
+			_, err := r.Delete(rev, force)
+			if err != nil {
+				fmt.Println("delete error: ", err)
+			}
+		} else {
+			fmt.Println("No configured repository", repo, "found.")
+		}
+	}
+}
+
 func (a *App) Diff(repo string, tagsOrRevs ...string) {
 	if len(a.repositories) == 0 {
 		fmt.Println("No repositories configured.")
@@ -142,7 +160,7 @@ func (a *App) Diff(repo string, tagsOrRevs ...string) {
 	if r, ok := a.getRepoName(repo); ok {
 		// if only 1 tag is provided, compare with latest tag
 		if len(tagsOrRevs) == 1 {
-			tagsOrRevs = append(tagsOrRevs, "latest")
+			tagsOrRevs = append(tagsOrRevs, config.DefaultLatestRevisionTag)
 		}
 		packageMap, err := r.PackageVersions(tagsOrRevs...)
 		if err != nil {
@@ -170,10 +188,6 @@ func (a *App) Diff(repo string, tagsOrRevs ...string) {
 	} else {
 		fmt.Println("No configured repository", repo, "found.")
 	}
-}
-
-func (a *App) Delete(action string) {
-	fmt.Println(action)
 }
 
 func (a *App) Server(port string) error {

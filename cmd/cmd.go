@@ -23,6 +23,7 @@ type Cli struct {
 	cmdDiff              *kingpin.CmdClause
 	cmdServer            *kingpin.CmdClause
 	cmdTagForceFlag      *bool
+	cmdDeleteForceFlag   *bool
 	cmdCreateRepoArg     *string
 	cmdStatusRepoArg     *string
 	cmdListRepoArg       *string
@@ -33,6 +34,7 @@ type Cli struct {
 	cmdTagTagArg         *string
 	cmdTagRevArg         *int64
 	cmdDeleteRepoArg     *string
+	cmdDeleteRevArg      *int64
 	cmdDiffRepoArg       *string
 	cmdDiffTagsOrRevsArg *[]string
 	cmdServerPort        *string
@@ -51,7 +53,7 @@ func NewCli() *Cli {
 	c.cmdList = c.Command("list", "List the packages of a repository.")
 	c.cmdUpdate = c.Command("update", "Update repositories with upstream content.")
 	c.cmdTag = c.Command("tag", "Tag repository revisions.")
-	c.cmdDelete = c.Command("delete", "Delete repositories. **NOT IMPLEMENTED**")
+	c.cmdDelete = c.Command("delete", "Delete repository revisions and tags.")
 	c.cmdDiff = c.Command("diff", "Show package differences between repository tags.")
 	c.cmdServer = c.Command("server", "HTTP server serving repositories.")
 
@@ -68,7 +70,9 @@ func NewCli() *Cli {
 	c.cmdTagRevArg = c.cmdTag.Arg("revision", "Revision to tag.").Required().Int64()
 	c.cmdTagForceFlag = c.cmdTag.Flag("force", "Force tag creation. Default is false.").Short('f').Bool()
 
-	c.cmdDeleteRepoArg = c.cmdDelete.Arg("repo name", "Repository name.").String()
+	c.cmdDeleteRepoArg = c.cmdDelete.Arg("repo name", "Repository name.").Required().String()
+	c.cmdDeleteRevArg = c.cmdDelete.Arg("revision", "Revision to delete.").Int64()
+	c.cmdDeleteForceFlag = c.cmdDelete.Flag("force", "Force deletion, never prompt. Default is false.").Short('f').Bool()
 
 	c.cmdDiffRepoArg = c.cmdDiff.Arg("repo name", "Repository name.").Required().String()
 	c.cmdDiffTagsOrRevsArg = c.cmdDiff.Arg("tag|revision", "Compare package versions between repository tags or revisions.").Required().Strings()
@@ -138,7 +142,7 @@ func (c *Cli) diffCli() error {
 }
 
 func (c *Cli) deleteCli() error {
-	c.app.Delete(c.action)
+	c.app.Delete(*c.cmdDeleteRepoArg, *c.cmdDeleteRevArg, *c.cmdDeleteForceFlag)
 	return nil
 }
 
