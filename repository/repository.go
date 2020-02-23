@@ -48,7 +48,6 @@ func NewRepository(repoConfig *config.RepositoryConfig) (*Repository, error) {
 // The Update method fetches the metadata and packages from upstream and
 // stores it locally.
 func (r *Repository) Update(rev int64) (bool, error) {
-	var revision *Revision
 	var err error
 
 	// If repo is disabled, do nothing on update
@@ -59,22 +58,16 @@ func (r *Repository) Update(rev int64) (bool, error) {
 	// If remote URL is empty, assume a local repo, else
 	// assume there is a linked upstream repo
 	if r.RemoteURI == "" {
-		revision, err = r.updateFromLocal(rev)
+		_, err = r.updateFromLocal(rev)
 	} else {
-		revision, err = r.updateFromRemote(rev)
+		_, err = r.updateFromRemote(rev)
 	}
 
 	if err != nil {
 		return false, err
 	}
 
-	r.initState()
-
-	if r.isLatestRevision(revision) {
-		return r.Tag(config.DefaultLatestRevisionTag, revision.Id, true)
-	}
-
-	return true, nil
+	return r.tagLatestRevision(config.DefaultLatestRevisionTag)
 }
 
 // The Tag method creates a tag symlink to the specified revision.
@@ -426,17 +419,15 @@ func (r *Repository) isLatestRevision(rev *Revision) bool {
 }
 
 // The tagLatestRevision method tags the latest revision if available.
-func (r *Repository) tagLatestRevision(tagname string) error {
+func (r *Repository) tagLatestRevision(tagname string) (bool, error) {
 	r.initState()
 
 	revision, ok := r.getLatestRevision()
 	if !ok {
-		return fmt.Errorf("No latest repository revision to tag.")
+		return ok, fmt.Errorf("No latest repository revision to tag.")
 	}
 
-	_, err := r.Tag(tagname, revision.Id, true)
-
-	return err
+	return r.Tag(tagname, revision.Id, true)
 }
 
 // The createRevisionDir method creates the revision directory under
