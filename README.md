@@ -354,10 +354,11 @@ usage: rrst [<flags>] <command> [<args> ...]
 Remote Repository Sync Tool
 
 Flags:
-      --help                     Show context-sensitive help (also try --help-long and --help-man).
-      --version                  Show application version.
-  -c, --config="/etc/rrst.yaml"  Path to alternate YAML configuration file.
-  -v, --verbose                  Turn on verbose output. Default is verbose turned off.
+      --help     Show context-sensitive help (also try --help-long and --help-man).
+      --version  Show application version.
+  -c, --config="/etc/rrst/config.yaml"
+                 Path to alternate YAML configuration file.
+  -v, --verbose  Turn on verbose output. Default is verbose turned off.
 
 Commands:
   help [<command>...]
@@ -378,8 +379,8 @@ Commands:
   tag [<flags>] <repo name> <tag name> <revision>
     Tag repository revisions.
 
-  delete [<repo name>]
-    Delete repositories. **NOT IMPLEMENTED**
+  delete [<flags>] <repo name> [<revision>]
+    Delete repository revisions and tags.
 
   diff <repo name> <tag|revision>...
     Show package differences between repository tags.
@@ -487,8 +488,20 @@ $ rrst -c config.yaml tag CENTOS-7-6-X86_64-updates my_custom_tag 1546898144
 
 ### rrst delete
 
-**Not implemented**. 
-This subcommand will delete repositories, revisions and tags.
+The delete command deletes revisions and associated tags.
+For now the command only deletes the metadata and not the content.
+
+Delete all revisions of a repository.
+
+```bash
+$ rrst -c config.yaml delete CENTOS-7-6-X86_64-updates
+```
+
+Delete a specific revision of a repository.
+
+```bash
+$ rrst -c config.yaml delete CENTOS-7-6-X86_64-updates 1546898144
+```
 
 ### rrst diff
 
