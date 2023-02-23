@@ -10,9 +10,7 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/onsi/ginkgo v1.4.0
 	github.com/onsi/gomega v1.3.0
-	golang.org/x/net v0.0.0-20180406214816-61147c48b25b // indirect
-	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 // indirect
-	golang.org/x/text v0.3.0 // indirect
+	golang.org/x/text v0.3.8 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.8
